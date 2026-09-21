@@ -103,9 +103,9 @@ async function fileToDataUrl(file){
   if(file.type==="image/gif")return await raw();
   try{
     const url=URL.createObjectURL(file);const img=await new Promise((ok,no)=>{const el=new Image();el.onload=()=>ok(el);el.onerror=()=>no(new Error("No se pudo procesar la imagen."));el.src=url});
-    const max=1800,scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1)),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+    const max=3840,scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1)),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
     const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;canvas.getContext("2d",{alpha:true}).drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
-    const blob=await new Promise(ok=>canvas.toBlob(ok,"image/webp",.88));if(!blob)return await raw();
+    const blob=await new Promise(ok=>canvas.toBlob(ok,"image/webp",.94));if(!blob)return await raw();
     return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(new Error("No se pudo guardar la imagen optimizada."));r.readAsDataURL(blob)});
   }catch{return await raw()}
 }

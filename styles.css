@@ -682,3 +682,89 @@ body.reduce-motion .ticker-track{animation:tickerVip 28s linear infinite!importa
 }
 body.preview-fast .page-noise,body.preview-fast .cursor-glow{display:none!important}
 body.preview-fast .particle{animation-duration:16s!important}
+
+
+/* =============================================================
+   V5.8.10 · CLEAN PHOTOS + SIDE ARROWS + COMPACT MOBILE
+   ============================================================= */
+
+/* Photos must remain faithful to the uploaded file. No color filters,
+   no global dimming and no image-wide gradient overlays. */
+img,
+.hero-bg,
+.media-bg,
+.feature-card .media-bg,
+.clip-card .media-bg,
+.culture-media,
+.social-card-media,
+.custom-image,
+.upcoming-image,
+.live-photo,
+.notice-media img{
+  filter:none!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+  -webkit-filter:none!important;
+}
+.feature-card::after,
+.clip-card::before,
+.culture-card::after,
+.social-card.has-image::after,
+.upcoming-portrait::after{
+  background:transparent!important;
+  opacity:0!important;
+}
+/* Selected state is communicated by geometry/border, never by dimming photos. */
+.feature-card,.feature-card.neighbor,.feature-card.active{opacity:1!important}
+
+/* Preserve text readability without painting over the whole photo. */
+.feature-card h3,.feature-card p,.feature-index,
+.clip-copy,.culture-card-bottom,.culture-platform-label,
+.social-card.has-image .social-copy,
+.upcoming-photo-copy{
+  text-shadow:0 2px 7px rgba(0,0,0,.98),0 0 16px rgba(0,0,0,.9)!important;
+}
+.social-card.has-image .social-icon,
+.culture-network-icon,.culture-go,
+.feature-card .text-badge,.clip-card .text-badge{
+  background:rgba(5,5,8,.38)!important;
+}
+
+/* Every actual horizontal carousel uses side navigation. */
+.featured-side-shell,.clips-side-shell{position:relative;min-width:0}
+.featured-arrow,.clips-side-arrow{display:grid!important}
+.featured-arrow.rail-arrow-left,.clips-side-arrow.rail-arrow-left{left:-14px}
+.featured-arrow.rail-arrow-right,.clips-side-arrow.rail-arrow-right{right:-14px}
+.featured-section .carousel-viewport{padding-inline:4px}
+.clips-side-shell .clips-carousel{overflow:hidden}
+
+/* Tight vertical rhythm: no decorative voids between modules on phones. */
+.section-copy:empty,.hero-copy:empty{display:none!important}
+@media(max-width:700px){
+  .section{padding:38px 20px!important}
+  .section-head{margin-bottom:14px!important;gap:12px!important}
+  .section-shell.dual-shell{gap:18px!important}
+  .section-badge{margin-bottom:12px!important}
+  .section-display{margin-bottom:10px!important}
+  .section-copy-col{margin-bottom:0!important}
+  .custom-block{margin-top:8px!important}
+  .upcoming-section{padding-bottom:22px!important}
+  .announcement-section{padding-top:22px!important}
+  .announcement-shell .section-display{margin-bottom:14px!important}
+  .featured-side-shell,.clips-side-shell,.culture-carousel-shell,.social-carousel-shell,.notices-carousel-wrap{margin-top:0!important}
+  .featured-arrow.rail-arrow-left,.clips-side-arrow.rail-arrow-left{left:2px}
+  .featured-arrow.rail-arrow-right,.clips-side-arrow.rail-arrow-right{right:2px}
+  .rail-arrow,.social-carousel-btn{width:44px!important;height:44px!important;font-size:17px!important}
+}
+@media(max-width:430px){
+  .section{padding:32px 18px!important}
+  .section-shell.dual-shell{gap:14px!important}
+  .section-head{margin-bottom:12px!important}
+  .upcoming-section{padding-bottom:18px!important}
+  .announcement-section{padding-top:18px!important}
+}
+
+/* V5.8.10 image fidelity: even the hero photo stays unfiltered. */
+.page-noise{display:none!important}
+.hero-bg{filter:none!important;opacity:1!important;mix-blend-mode:normal!important}
+.hero::before,.hero::after{background:transparent!important;opacity:0!important}

@@ -1,0 +1,9 @@
+V5.8.10 PRODUCTION CLEAN
+
+- Todas las fotos se renderizan sin filtros de color, opacidad ni overlays globales.
+- Destacados ya no oscurece fotos no seleccionadas.
+- Calidad de subida aumentada: hasta 3840 px y WEBP 0.94.
+- Destacados y Clips ahora usan flechas laterales como los demás carruseles.
+- Todos los carruseles reales conservan navegación lateral.
+- Espaciado vertical móvil reducido para evitar zonas vacías.
+- Sin cambios en configuración, Supabase, login ni estructura del panel.

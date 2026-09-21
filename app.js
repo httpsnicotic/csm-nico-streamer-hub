@@ -745,6 +745,11 @@ function setupCarousel(c) {
   const viewport = document.getElementById("featuredViewport");
   const track = document.getElementById("featuredTrack");
   const cards = [...track.children];
+  const prevFeatured = document.getElementById("prevFeatured");
+  const nextFeatured = document.getElementById("nextFeatured");
+  const hasFeaturedCarousel = cards.length > 1;
+  prevFeatured?.classList.toggle("hidden", !hasFeaturedCarousel);
+  nextFeatured?.classList.toggle("hidden", !hasFeaturedCarousel);
   if (!cards.length) return;
 
   let index = 0;
@@ -771,8 +776,8 @@ function setupCarousel(c) {
     timer = setInterval(() => go(index >= max() ? 0 : index + 1), Math.max(1500, Number(c.effects?.carouselSeconds || 3.6) * 1000));
   };
 
-  document.getElementById("nextFeatured").onclick = () => { go(index >= max() ? 0 : index + 1); auto(); };
-  document.getElementById("prevFeatured").onclick = () => { go(index <= 0 ? max() : index - 1); auto(); };
+  if (nextFeatured) nextFeatured.onclick = () => { go(index >= max() ? 0 : index + 1); auto(); };
+  if (prevFeatured) prevFeatured.onclick = () => { go(index <= 0 ? max() : index - 1); auto(); };
   viewport.addEventListener("pointerdown", e => { startX = e.clientX; });
   viewport.addEventListener("pointerup", e => {
     const d = e.clientX - startX;
@@ -895,6 +900,9 @@ function setupClipsCarousel() {
   };
   const move = dir => track.scrollBy({ left: dir * step(), behavior: "smooth" });
   const prev = document.getElementById("prevClip"), next = document.getElementById("nextClip");
+  const hasClipCarousel = track.children.length > 1;
+  prev?.classList.toggle("hidden", !hasClipCarousel);
+  next?.classList.toggle("hidden", !hasClipCarousel);
   if (prev) prev.onclick = () => move(-1);
   if (next) next.onclick = () => move(1);
 }

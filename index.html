@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5.8.9">
+  <link rel="stylesheet" href="styles.css?v=5.8.10">
 </head>
 <body>
   <div id="previewRibbon" class="preview-ribbon hidden">VISTA PREVIA · NO PUBLICADO</div>
@@ -111,18 +111,24 @@
             <div class="section-badge"><span id="featuredTag">JUST DROPPED</span></div>
             <h2 class="display-title section-display"><span id="featuredTitle1" class="white">QUÉ ESTÁ</span><span id="featuredTitle2">PASANDO.</span></h2>
           </div>
-          <div class="carousel-controls"><button id="prevFeatured" aria-label="Anterior">←</button><button id="nextFeatured" aria-label="Siguiente">→</button></div>
         </div>
-        <div id="featuredViewport" class="carousel-viewport reveal"><div id="featuredTrack" class="carousel-track"></div></div>
+        <div class="featured-side-shell reveal">
+          <button id="prevFeatured" class="rail-arrow rail-arrow-left featured-arrow" type="button" aria-label="Anterior">←</button>
+          <div id="featuredViewport" class="carousel-viewport"><div id="featuredTrack" class="carousel-track"></div></div>
+          <button id="nextFeatured" class="rail-arrow rail-arrow-right featured-arrow" type="button" aria-label="Siguiente">→</button>
+        </div>
       </section>
 
       <section id="clips" class="section page-section" data-section="clips">
         <div class="section-head reveal clips-head">
           <div><div class="section-badge"><span id="clipsTag">MEJORES MOMENTOS</span></div>
           <h2 class="display-title section-display"><span id="clipsTitle1" class="white">MIRA LOS</span><span id="clipsTitle2">CLIPS.</span></h2></div>
-          <div class="carousel-controls clips-controls"><button id="prevClip" aria-label="Clip anterior">←</button><button id="nextClip" aria-label="Clip siguiente">→</button></div>
         </div>
-        <div class="clips-carousel"><div id="clipsGrid" class="clips-grid"></div></div>
+        <div class="clips-side-shell">
+          <button id="prevClip" class="rail-arrow rail-arrow-left clips-side-arrow" type="button" aria-label="Clip anterior">←</button>
+          <div class="clips-carousel"><div id="clipsGrid" class="clips-grid"></div></div>
+          <button id="nextClip" class="rail-arrow rail-arrow-right clips-side-arrow" type="button" aria-label="Clip siguiente">→</button>
+        </div>
       </section>
 
       <section id="upcoming" class="section page-section upcoming-section" data-section="upcoming">
@@ -165,10 +171,10 @@
   <footer class="footer"><div class="brand footer-brand"><span id="footerBrandBase">CSM</span><span id="footerBrandAccent">NICO</span></div><div id="footerLinks" class="footer-links"></div><div class="footer-bottom"><span>© <span id="year"></span> <span id="copyrightBrand">CSMNICO</span></span><span>CENTRO DEL STREAMER</span></div></footer>
   <button class="floating-button" id="floatingButton" aria-label="Ir a redes"><span class="floating-x">×</span></button>
 
-  <script src="local-db.js?v=5.8.9"></script>
-  <script src="config.js?v=5.8.9"></script>
-  <script src="default-content.js?v=5.8.9"></script>
-  <script src="cloud.js?v=5.8.9"></script>
-  <script src="app.js?v=5.8.9"></script>
+  <script src="local-db.js?v=5.8.10"></script>
+  <script src="config.js?v=5.8.10"></script>
+  <script src="default-content.js?v=5.8.10"></script>
+  <script src="cloud.js?v=5.8.10"></script>
+  <script src="app.js?v=5.8.10"></script>
 </body>
 </html>
