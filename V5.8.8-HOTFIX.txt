@@ -1,0 +1,6 @@
+V5.8.8 HOTFIX
+
+- Corrige Failed to fetch al publicar por primera vez con imágenes heredadas en data:image/base64.
+- La conversión data URL -> Blob ya no usa fetch(), por lo que respeta la CSP estricta.
+- Mejora mensajes de error de Storage y base de datos.
+- No cambia el diseño ni la configuración visual.

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08080a">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Admin · Streamer Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css?v=5.8.8">
+</head>
+<body>
+<header class="admin-topbar"><div class="top-left"><strong>CENTRO DEL STREAMER</strong><span id="modeBadge">MODO LOCAL</span><span id="draftBadge" class="draft-badge hidden">CAMBIOS SIN PREVISUALIZAR</span></div><div class="top-actions"><button id="fullPreviewBtn" class="ghost">VISTA COMPLETA</button><a href="index.html" target="_blank" rel="noopener">ABRIR SITIO PUBLICADO ↗</a><button id="logoutBtn" class="ghost hidden">CERRAR SESIÓN</button></div></header>
+<section id="loginView" class="login-view hidden"><div class="login-card"><p class="kicker">ADMINISTRACIÓN SEGURA EN LA NUBE</p><h1>INICIAR SESIÓN</h1><p>Solo una cuenta incluida en la tabla de administradores puede publicar cambios.</p><label>Usuario / correo<input id="loginEmail" type="text" inputmode="email" autocomplete="username" placeholder="tu correo de administrador"></label><label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password"></label><button id="loginBtn" class="primary">ENTRAR AL PANEL</button><p id="loginError" class="error"></p></div></section>
+<main id="adminView" class="admin-layout">
+  <aside class="admin-sidebar"><p class="kicker">PANEL DE CONTROL</p><h1>ADMINISTRACIÓN</h1><nav><a href="#general">General</a><a href="#nav">Navegación</a><a href="#theme">Colores</a><a href="#effects">Efectos</a><a href="#live">Kick / En vivo</a><a href="#socials">Redes</a><a href="#cultureAdmin">Instagram / Cultura</a><a href="#featured">Carrusel</a><a href="#clips">Clips</a><a href="#upcoming">Próximo stream</a><a href="#announcement">Anuncio</a><a href="#about">Sobre mí</a><a href="#extras">Extra</a><a href="#sections">Secciones</a><a href="#history">Historial</a></nav><div class="sidebar-actions"><button id="previewBtn" class="preview-btn">VISTA PREVIA</button><button id="publishBtn" class="primary" disabled>PUBLICAR</button><button id="discardBtn" class="ghost">DESCARTAR BORRADOR</button><small id="saveStatus"></small></div></aside>
+  <section class="editor">
+    <div id="localNotice" class="notice">MODO LOCAL: publicar solo afecta este navegador. Activa Supabase para sincronizar PC, iPhone y GitHub Pages.</div>
+    <div class="safety-notice"><strong>EDICIÓN SEGURA</strong> Nada se publica mientras editas. Debes previsualizar la versión exacta antes de poder publicar.</div>
+
+    <section id="general" class="panel"><p class="kicker">01 / GENERAL</p><h2>IDENTIDAD + PORTADA</h2><div class="form-grid two">
+      <label>Nombre base<input data-path="brandBase"></label><label>Nombre destacado<input data-path="brandAccent"></label><label class="span-2">Texto superior<input data-path="eyebrow"></label>
+      <label>Título principal 1<input data-path="heroLine1"></label><label>Título principal 2<input data-path="heroLine2"></label><label class="span-2">Descripción<textarea data-path="heroDescription"></textarea></label>
+      <div class="image-field span-2"><label>URL del fondo de portada<input data-path="heroImage"></label><label class="upload-label">SUBIR IMAGEN<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-upload-target="heroImage"></label><small>Nada de filtros de color sobre la imagen. Se mostrará limpia.</small></div>
+      <label>Oscurecimiento del fondo<input type="range" min="0.05" max="0.95" step="0.01" data-path="heroOverlay" data-number></label><label>Texto de la franja animada<input data-path="tickerText"></label>
+      <label>Texto del botón principal<input data-path="primaryCta.label"></label><label>URL del botón principal<input data-path="primaryCta.url"></label><label>Texto del botón secundario<input data-path="secondaryCta.label"></label><label>URL del botón secundario<input data-path="secondaryCta.url"></label>
+      <label class="toggle-row span-2"><span>Activar botón terciario</span><input type="checkbox" data-path="tertiaryCta.enabled"></label><label>Texto del botón terciario<input data-path="tertiaryCta.label"></label><label>URL del botón terciario<input data-path="tertiaryCta.url"></label>
+      <label class="toggle-row span-2"><span>Mostrar Telegram en portada</span><input type="checkbox" data-path="telegramBar.enabled"></label><label>Texto Telegram<input data-path="telegramBar.label"></label><label>URL Telegram<input data-path="telegramBar.url"></label>
+      <label class="toggle-row span-2"><span>Mostrar Instagram en portada</span><input type="checkbox" data-path="instagramPromo.enabled"></label><label>Texto pequeño Instagram<input data-path="instagramPromo.hint"></label><label>Subtexto Instagram<input data-path="instagramPromo.text"></label><label>Texto botón Instagram<input data-path="instagramPromo.cta.label"></label><label>URL Instagram<input data-path="instagramPromo.cta.url"></label>
+      <div class="hero-control-box span-2">
+        <div class="panel-title-row compact-title"><div><p class="kicker">PORTADA / COLOR + NEÓN</p><h3>CONTROL VISUAL DE LA PORTADA</h3></div></div>
+        <div class="hero-color-grid">
+          <label>Logo base<input type="color" data-path="theme.brandBaseColor"></label>
+          <label>Logo destacado<input type="color" data-path="theme.brandAccentColor"></label>
+          <label>STREAM / título blanco<input type="color" data-path="theme.heroTitleWhite"></label>
+          <label>NICO / título grande<input type="color" data-path="theme.heroTitleNeon"></label>
+          <label>Texto superior<input type="color" data-path="theme.heroEyebrow"></label>
+          <label>Texto de portada<input type="color" data-path="theme.heroText"></label>
+          <label>Luz izquierda<input type="color" data-path="theme.heroGlowLeft"></label>
+          <label>Luz central<input type="color" data-path="theme.heroGlowCenter"></label>
+          <label>Luz derecha<input type="color" data-path="theme.heroGlowRight"></label>
+          <label>Haz rosa<input type="color" data-path="theme.heroBeamPink"></label>
+          <label>Haz azul<input type="color" data-path="theme.heroBeamBlue"></label>
+          <label>Botón principal inicio<input type="color" data-path="theme.buttonGradientStart"></label>
+          <label>Botón principal final<input type="color" data-path="theme.buttonGradientEnd"></label>
+          <label>Texto botón principal<input type="color" data-path="theme.buttonText"></label>
+          <label>Botón secundario<input type="color" data-path="theme.buttonDark"></label>
+          <label>Texto botón secundario<input type="color" data-path="theme.buttonDarkText"></label>
+        </div>
+        <div class="neon-sliders">
+          <label>Intensidad neón de NICO <span class="range-value" data-range-value="effects.heroNeonIntensity"></span><input type="range" min="0" max="230" step="1" data-path="effects.heroNeonIntensity" data-number></label>
+          <label>Brillo del texto blanco STREAM <span class="range-value" data-range-value="effects.heroWhiteGlowIntensity"></span><input type="range" min="0" max="230" step="1" data-path="effects.heroWhiteGlowIntensity" data-number></label>
+          <label>Neón fuerte de títulos / subtítulos de sección <span class="range-value" data-range-value="effects.sectionNeonIntensity"></span><input type="range" min="0" max="230" step="1" data-path="effects.sectionNeonIntensity" data-number></label>
+          <label>Intensidad de neón de subtítulos <span class="range-value" data-range-value="effects.subtitleNeonIntensity"></span><input type="range" min="0" max="230" step="1" data-path="effects.subtitleNeonIntensity" data-number></label>
+          <label>Brillo del texto de subtítulos <span class="range-value" data-range-value="effects.subtitleTextBrightness"></span><input type="range" min="0" max="230" step="1" data-path="effects.subtitleTextBrightness" data-number></label>
+          <label>Luces del fondo <span class="range-value" data-range-value="effects.backgroundGlowIntensity"></span><input type="range" min="0" max="100" step="1" data-path="effects.backgroundGlowIntensity" data-number></label>
+        </div>
+      </div>
+    </div></section>
+
+    <section id="nav" class="panel"><div class="panel-title-row"><div><p class="kicker">02 / NAVEGACIÓN</p><h2>MENÚ SUPERIOR</h2></div><button id="addNavBtn" class="mini-btn">+ AÑADIR</button></div><div id="navEditor" class="stack"></div></section>
+
+    <section id="theme" class="panel"><p class="kicker">03 / TEMA</p><h2>COLORES + FORMA</h2><div id="themeEditor" class="theme-grid"></div></section>
+
+    <section id="effects" class="panel"><p class="kicker">04 / EFECTOS</p><h2>MOTOR DE ANIMACIONES</h2><div class="toggle-grid"><label><span>Partículas</span><input type="checkbox" data-path="effects.particles"></label><label><span>Franja animada</span><input type="checkbox" data-path="effects.ticker"></label><label><span>Animación al desplazarse</span><input type="checkbox" data-path="effects.reveal"></label><label><span>Carrusel automático</span><input type="checkbox" data-path="effects.carouselAuto"></label><label><span>Reducir movimiento</span><input type="checkbox" data-path="effects.reduceMotion"></label><label><span>Botón flotante</span><input type="checkbox" data-path="effects.floatingButton"></label></div><div class="form-grid two later"><label>Segundos del carrusel<input type="number" min="1.5" max="20" step=".1" data-path="effects.carouselSeconds" data-number></label></div></section>
+
+    <section id="live" class="panel"><p class="kicker">05 / LIVE</p><h2>ESTADO DE KICK</h2><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.live.tag"></label><label>Título blanco<input data-path="sectionHeaders.live.title1"></label><label>Título neon<input data-path="sectionHeaders.live.title2"></label><label class="toggle-row"><span>En vivo ahora</span><input type="checkbox" data-path="isLive"></label><label>Usuario de Kick<input data-path="kickHandle"></label><label class="span-2">Descripción del directo<textarea data-path="liveDescription"></textarea></label><div class="image-field span-2"><label>URL foto pequeña de la tarjeta Kick<input data-path="liveImage"></label><label class="upload-label">SUBIR FOTO<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-upload-target="liveImage"></label><small>Se muestra dentro de la tarjeta Kick. Si estás en vivo, la tarjeta entera tendrá pulso en el borde.</small></div></div><p class="panel-copy">Tarjetas informativas de la tarjeta Kick: el texto grande va arriba y la explicación corta va abajo.</p><div id="statsEditor" class="stack later"></div></section>
+
+    <section id="socials" class="panel"><div class="panel-title-row"><div><p class="kicker">06 / REDES</p><h2>APARTADO DE REDES</h2></div><button id="addSocialBtn" class="mini-btn">+ AÑADIR</button></div><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.socials.tag"></label><label>Descripción<textarea data-path="socialsDescription"></textarea></label><label>Título blanco<input data-path="sectionHeaders.socials.title1"></label><label>Título neon<input data-path="sectionHeaders.socials.title2"></label><label>CTA principal de redes<input data-path="socialsMainCta.label"></label><label>URL CTA de redes<input data-path="socialsMainCta.url"></label></div><div id="socialEditor" class="stack later"></div></section>
+
+
+    <section id="cultureAdmin" class="panel"><div class="panel-title-row"><div><p class="kicker">07 / INSTAGRAM</p><h2>INSTAGRAM / CULTURA</h2></div><button id="addCultureItemBtn" class="mini-btn">+ AÑADIR FOTO</button></div>
+      <div class="form-grid two"><label class="toggle-row span-2"><span>Mostrar sección</span><input type="checkbox" data-path="culture.enabled"></label><label>Tag del título<input data-path="culture.kicker"></label><label>Descripción opcional<textarea data-path="culture.text"></textarea></label><label>Título blanco<input data-path="culture.title1"></label><label>Título neon<input data-path="culture.title2"></label><label>Texto CTA<input data-path="culture.ctaLabel"></label><label>URL Instagram<input data-path="culture.ctaUrl"></label></div><div id="cultureEditor" class="stack later"></div>
+    </section>
+
+    <section id="featured" class="panel"><div class="panel-title-row"><div><p class="kicker">07 / DESTACADO</p><h2>CARRUSEL AUTOMÁTICO</h2></div><button id="addFeaturedBtn" class="mini-btn">+ AÑADIR</button></div><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.featured.tag"></label><label class="toggle-row"><span>Autoavance</span><input type="checkbox" data-path="effects.carouselAuto"></label><label>Título blanco<input data-path="sectionHeaders.featured.title1"></label><label>Título neon<input data-path="sectionHeaders.featured.title2"></label></div><div id="featuredEditor" class="stack later"></div></section>
+
+    <section id="clips" class="panel"><div class="panel-title-row"><div><p class="kicker">08 / CLIPS</p><h2>TARJETAS DE CLIPS</h2></div><button id="addClipBtn" class="mini-btn">+ AÑADIR</button></div><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.clips.tag"></label><label></label><label>Título blanco<input data-path="sectionHeaders.clips.title1"></label><label>Título neon<input data-path="sectionHeaders.clips.title2"></label></div><div id="clipsEditor" class="stack later"></div></section>
+
+    <section id="upcoming" class="panel"><p class="kicker">09 / PRÓXIMO</p><h2>CUENTA REGRESIVA</h2><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.upcoming.tag"></label><label>Título white<input data-path="sectionHeaders.upcoming.title1"></label><label>Título neon<input data-path="sectionHeaders.upcoming.title2"></label><label class="span-2">Título del bloque<input data-path="nextStreamTitle"></label><label class="span-2">Texto<textarea data-path="nextStreamText"></textarea></label><label class="span-2">Fecha ISO<input data-path="nextStreamISO" placeholder="2026-10-01T21:00:00-05:00"></label><div class="image-field span-2"><label>URL foto del próximo stream<input data-path="nextStreamImage"></label><label class="upload-label">SUBIR FOTO<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-upload-target="nextStreamImage"></label><small>Esta foto aparece a la izquierda del bloque de cuenta regresiva.</small></div></div></section>
+
+    <section id="announcement" class="panel"><div class="panel-title-row"><div><p class="kicker">10 / AVISOS</p><h2>AVISOS / NOVEDADES</h2></div><button id="addAnnouncementBtn" class="mini-btn">+ AÑADIR AVISO</button></div><div class="form-grid two"><label class="toggle-row span-2"><span>Mostrar sección de avisos</span><input type="checkbox" data-path="announcement.enabled"></label><label>Tag del título<input data-path="sectionHeaders.announcements.tag"></label><label></label><label>Título blanco<input data-path="sectionHeaders.announcements.title1"></label><label>Título neon<input data-path="sectionHeaders.announcements.title2"></label></div><p class="panel-copy">Cada aviso será una tarjeta del carrusel. La foto se muestra recortada y al tocar “Ver foto completa” se expande dentro de la misma tarjeta.</p><div id="announcementEditor" class="stack later"></div></section>
+
+    <section id="about" class="panel"><p class="kicker">11 / SOBRE MÍ</p><h2>CREADOR + CTA FINAL</h2><div class="form-grid two"><label>Tag del título<input data-path="sectionHeaders.about.tag"></label><label>Título blanco<input data-path="sectionHeaders.about.title1"></label><label>Título neon<input data-path="sectionHeaders.about.title2"></label><label>Sobre mí título<input data-path="about.title"></label><label class="span-2">Sobre mí texto<textarea data-path="about.text"></textarea></label><label>Etiqueta final<input data-path="finalCta.kicker"></label><label class="span-2">Título final<input data-path="finalCta.title"></label></div></section>
+
+    <section id="extras" class="panel"><div class="panel-title-row"><div><p class="kicker">12 / EXTRA</p><h2>SECCIONES PERSONALIZADAS</h2></div><button id="addCustomSectionBtn" class="mini-btn">+ AÑADIR</button></div><p class="panel-copy">Crea bloques extra para anuncios, merch, comunidad, patrocinios o lo que quieras. Puedes ocultarlos, eliminarlos y moverlos en el orden general desde “Secciones”.</p><div id="customSectionEditor" class="stack"></div></section>
+
+    <section id="sections" class="panel"><p class="kicker">13 / SECCIONES</p><h2>MOSTRAR + ORDENAR</h2><div id="sectionEditor" class="section-editor"></div></section>
+
+    <section id="history" class="panel"><div class="panel-title-row"><div><p class="kicker">14 / SEGURIDAD</p><h2>HISTORIAL DE VERSIONES</h2></div><button id="refreshHistoryBtn" class="mini-btn">ACTUALIZAR</button></div><p class="panel-copy">Cada publicación guarda la versión anterior. Cargar una versión solo la convierte en borrador.</p><div id="historyList" class="history-list"></div></section>
+  </section>
+  <aside class="preview"><div class="preview-head"><div class="preview-title"><strong>VISTA DEL BORRADOR</strong><span id="previewSectionLabel">PORTADA</span></div><div><button data-viewport="mobile" class="viewport-btn active">M</button><button data-viewport="tablet" class="viewport-btn">T</button><button data-viewport="desktop" class="viewport-btn">D</button><button id="refreshPreview" aria-label="Actualizar preview">↻</button></div></div><div class="device-shell mobile" id="deviceShell"><iframe id="previewFrame" src="index.html?preview=1" title="Vista previa"></iframe></div></aside>
+</main>
+<div id="fullPreviewModal" class="modal hidden"><div class="full-preview-panel"><div class="modal-head"><strong>VISTA COMPLETA DEL BORRADOR</strong><div><button data-full-viewport="mobile" class="viewport-btn active">MÓVIL</button><button data-full-viewport="tablet" class="viewport-btn">TABLET</button><button data-full-viewport="desktop" class="viewport-btn">ESCRITORIO</button><button id="closeFullPreview">CERRAR</button></div></div><div class="full-device mobile" id="fullDevice"><iframe id="fullPreviewFrame" src="about:blank" title="Vista previa completa"></iframe></div></div></div>
+<div id="publishModal" class="modal hidden"><div class="confirm-card"><p class="kicker">CONFIRMACIÓN FINAL</p><h2>¿PUBLICAR CAMBIOS?</h2><p id="publishSummary">La vista previa está actualizada.</p><label>Escribe <b>PUBLICAR</b> para confirmar<input id="publishConfirmInput" autocomplete="off"></label><div class="confirm-actions"><button id="cancelPublish" class="ghost">CANCELAR</button><button id="confirmPublish" class="primary" disabled>PUBLICAR AHORA</button></div></div></div>
+<script src="local-db.js?v=5.8.8"></script><script src="config.js?v=5.8.8"></script><script src="default-content.js?v=5.8.8"></script><script src="cloud.js?v=5.8.8"></script><script src="admin.js?v=5.8.8"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+V5.3
+- Tarjetas de cultura sin IG fijo; badge editable por tarjeta.
+- Próximo stream con foto opcional.
+- Tarjeta Kick con foto opcional y pulso visual cuando está en vivo.
+- Avisos con foto compacta y botón “Ver foto completa”.
+- Intensidad de neón extendida hasta 220%.
+
+STREAMER SOCIAL HUB V5.2
+
+CORRECCIONES DE ESTA VERSIÓN
+
+1. Preview del admin en celular
+- El preview ya no se oculta por debajo de 1320 px.
+- En celular queda visible en la parte superior del panel.
+- Se ajusta a Móvil / Tablet / Escritorio.
+
+2. Scroll ADMIN -> PREVIEW sincronizado
+- Al desplazarte por General, Live, Redes, Instagram, Carrusel, Clips, Próximo, Avisos, etc., el preview se desplaza al apartado correspondiente.
+- También funciona al tocar los botones del menú del admin y al editar un campo de una sección.
+- La sincronización usa scroll inmediato para evitar que el preview llegue tarde.
+
+3. Telegram e Instagram de la portada
+- Se corrigió el bug que hacía gigantes los SVG.
+- Ya no son imágenes/bloques negros enormes.
+- Ahora son iconos SVG pequeños de 16-18 px.
+
+4. Neón ajustable
+En IDENTIDAD + PORTADA ahora aparecen sliders de 0 a 100 para:
+- Intensidad neón de NICO.
+- Brillo del título blanco STREAM.
+- Neón de títulos de secciones.
+- Intensidad de las luces del fondo.
+El neón ilumina alrededor sin borrar la forma de las letras.
+
+5. Color de NICO grande
+- Se añadió selector independiente para NICO / título grande.
+- También se puede cambiar el color de STREAM, logo, luces laterales, haz rosa/azul, botones y textos.
+
+6. Colores de IDENTIDAD + PORTADA
+Restaurados directamente dentro de General:
+- logo base
+- logo destacado
+- STREAM
+- NICO
+- texto superior
+- texto de portada
+- luz izquierda / centro / derecha
+- haz rosa / azul
+- gradiente del botón principal
+- textos de botones
+
+7. Panel COLORES
+Se ampliaron los selectores para cubrir header, footer, navegación, tarjetas, redes, Instagram, Avisos, Live, Próximo stream, botones, badges, contador, títulos de secciones, botón flotante y aviso de preview.
+
+8. Textos guía
+- La web pública filtra frases internas como “activa o desactiva”, “desde el panel”, “el contador se actualiza”, etc.
+- Los campos vacíos no muestran texto de relleno.
+
+9. Caché
+- CSS y JavaScript llevan versión 5.2.0 para evitar que Safari/Chrome siga usando archivos de versiones anteriores.
+
+10. Login / seguridad
+- No hay usuario ni contraseña hardcodeados en el código público.
+- En Nube Segura, Supabase Auth + RLS sigue siendo la barrera de seguridad.
+- El campo de acceso aparece como Usuario / correo, pero la autenticación segura actual usa el correo del usuario administrador de Supabase.

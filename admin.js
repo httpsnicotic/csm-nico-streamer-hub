@@ -1,0 +1,279 @@
+
+const LIVE_KEY="streamerHubConfig_v2", PREVIEW_KEY="streamerHubPreview_v2", LOCAL_REVISIONS_KEY="streamerHubRevisions_v2";
+let draft=null,published=null,previewSignature="",dirty=false,draftRevision=0;
+let cloudBootstrapDraft=null;
+const clone=v=>JSON.parse(JSON.stringify(v));
+function deepMerge(base,custom){if(!custom||typeof custom!=="object")return clone(base);const out=Array.isArray(base)?[...base]:{...base};for(const[k,v]of Object.entries(custom)){if(v&&typeof v==="object"&&!Array.isArray(v)&&base?.[k]&&typeof base[k]==="object"&&!Array.isArray(base[k]))out[k]=deepMerge(base[k],v);else out[k]=v;}return out;}
+function normalizeConfig(input){
+  const d=clone(window.DEFAULT_CONFIG||{}), incoming=input||{};
+  const hadAnnouncements=Array.isArray(incoming.announcements);
+  const legacyAnnouncement=incoming.announcement&&typeof incoming.announcement==="object"?clone(incoming.announcement):null;
+  let c=deepMerge(d,incoming);
+  if(!Array.isArray(c.socials))c.socials=[]; if(!Array.isArray(c.featured))c.featured=[]; if(!Array.isArray(c.clips))c.clips=[]; if(!Array.isArray(c.liveStats))c.liveStats=clone(d.liveStats); if(!Array.isArray(c.navLinks))c.navLinks=clone(d.navLinks); if(!Array.isArray(c.customSections))c.customSections=[];
+  if(!c.culture||typeof c.culture!=="object")c.culture=clone(d.culture); if(!Array.isArray(c.culture.items))c.culture.items=[];
+  if(!Array.isArray(c.announcements))c.announcements=[];
+  if(!hadAnnouncements&&legacyAnnouncement&&["kicker","title","chip","text","cta","url","image"].some(k=>legacyAnnouncement[k])) c.announcements=[{id:"notice_migrated",enabled:legacyAnnouncement.enabled!==false,kicker:legacyAnnouncement.kicker||"AVISO",title:legacyAnnouncement.title||"AVISO / NOVEDAD",chip:legacyAnnouncement.chip||"",text:legacyAnnouncement.text||"",cta:legacyAnnouncement.cta||"",url:legacyAnnouncement.url||"#",image:legacyAnnouncement.image||""}];
+  const valid=["live","socials","culture","featured","clips","upcoming","announcements","about","custom"]; if(!c.sections||typeof c.sections!=="object")c.sections={}; c.sections={...d.sections,...c.sections}; if(!Array.isArray(c.sectionOrder))c.sectionOrder=[...valid]; c.sectionOrder=[...c.sectionOrder.filter(x=>valid.includes(x)),...valid.filter(x=>!c.sectionOrder.includes(x))]; c.sectionHeaders=deepMerge(d.sectionHeaders,c.sectionHeaders||{});
+  const clean=v=>[/activa o desactiva este bloque/i,/el contador se actualiza/i,/cuando estés en directo/i,/todo tu ecosistema en un solo lugar/i,/una página central para tus directos/i,/describe aquí/i,/edita esta/i,/tu puerta principal/i,/aquí aparecerán tus anuncios/i,/novedades diarias, momentos del estudio/i].some(rx=>rx.test(String(v||"")))?"":v;
+  c.liveDescription=clean(c.liveDescription);c.socialsDescription=clean(c.socialsDescription);c.nextStreamText=clean(c.nextStreamText);c.about.text=clean(c.about?.text);c.culture.text=clean(c.culture?.text);c.featured.forEach(x=>x.subtitle=clean(x.subtitle));c.clips.forEach(x=>x.subtitle=clean(x.subtitle));c.customSections.forEach(x=>x.text=clean(x.text));c.culture.items.forEach(x=>{x.text=clean(x.text);if(!x.platform)x.platform='instagram';if(x.platformLabel==null)x.platformLabel='';});c.announcements.forEach(x=>{x.text=clean(x.text);if(x.enabled==null)x.enabled=true;});
+  if(c.tertiaryCta && /nuevo lanzamiento/i.test(String(c.tertiaryCta.label||""))) c.tertiaryCta.enabled=false;
+  return c;
+}
+function getByPath(obj,path){return path.split(".").reduce((a,k)=>a?.[k],obj)}
+function setByPath(obj,path,value){const p=path.split("."),last=p.pop(),t=p.reduce((a,k)=>(a[k]??={}),obj);t[last]=value}
+const uid=(p="id")=>`${p}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const signature=o=>JSON.stringify(o);
+const previewToken=()=>String(draftRevision);
+function status(msg,good=true){const e=document.getElementById("saveStatus");e.textContent=msg;e.style.color=good?"#53fc18":"#ff6589";setTimeout(()=>{if(e.textContent===msg)e.textContent=""},4000)}
+function updateActionState(){
+  const badge=document.getElementById("draftBadge"),publishBtn=document.getElementById("publishBtn");
+  const previewCurrent=dirty&&previewSignature===previewToken();
+  if(badge)badge.classList.toggle("hidden",!dirty||previewCurrent);
+  if(publishBtn)publishBtn.disabled=!dirty||!previewCurrent;
+}
+function markDirty(){dirty=true;draftRevision++;previewSignature="";updateActionState()}
+function markClean(){dirty=false;previewSignature="";draftRevision++;updateActionState()}
+async function loadPublished(){
+  if(window.CloudConfig?.enabled()){
+    const c=await window.CloudConfig.load();
+    if(c) return normalizeConfig(c);
+    try{
+      const stored=await window.LocalConfigDB?.migrateFromLocalStorage(LIVE_KEY);
+      if(stored) cloudBootstrapDraft=normalizeConfig(stored);
+    }catch(e){console.warn("Local bootstrap load failed",e)}
+    return normalizeConfig(clone(window.DEFAULT_CONFIG));
+  }
+  try{
+    const stored=await window.LocalConfigDB?.migrateFromLocalStorage(LIVE_KEY);
+    if(stored)return normalizeConfig(stored);
+  }catch(e){console.warn("Local DB load failed",e)}
+  return normalizeConfig(clone(window.DEFAULT_CONFIG));
+}
+function updateRangeOutputs(){document.querySelectorAll('[data-range-value]').forEach(out=>{const v=getByPath(draft,out.dataset.rangeValue);out.textContent=`${Math.round(Number(v||0))}%`})}
+function syncPathPeers(path,source){const val=getByPath(draft,path);document.querySelectorAll(`[data-path="${CSS.escape(path)}"]`).forEach(el=>{if(el===source)return;if(el.type==='checkbox')el.checked=!!val;else el.value=val??''});document.querySelectorAll(`[data-theme-color="${CSS.escape(path)}"]`).forEach(el=>{if(/^#[0-9a-fA-F]{6}$/.test(String(val)))el.value=val});document.querySelectorAll(`[data-theme-text="${CSS.escape(path)}"]`).forEach(el=>el.value=val??'');updateRangeOutputs()}
+function bindSimpleFields(){document.querySelectorAll('[data-path]').forEach(el=>{if(el.dataset.bound==='1')return;el.dataset.bound='1';const path=el.dataset.path,val=getByPath(draft,path);if(el.type==='checkbox')el.checked=!!val;else el.value=val??'';const h=()=>{const v=el.type==='checkbox'?el.checked:(el.dataset.number!==undefined||el.type==='number'||el.type==='range'?Number(el.value):el.value);setByPath(draft,path,v);syncPathPeers(path,el);previewSignature='';markDirty()};el.addEventListener(el.type==='checkbox'?'change':'input',h)});updateRangeOutputs()}
+function themeField(label,path,type="color",min,max,step){const v=getByPath(draft,path);if(type==="color"){const safe=/^#[0-9a-fA-F]{6}$/.test(String(v))?v:"#000000";return`<div class="color-row"><label>${esc(label)}<input type="color" value="${esc(safe)}" data-theme-color="${esc(path)}"></label><label>Valor<input value="${esc(v)}" data-theme-text="${esc(path)}"></label></div>`}return`<label>${esc(label)}<input type="${type}" value="${esc(v)}" min="${min}" max="${max}" step="${step}" data-theme-number="${esc(path)}"></label>`}
+function renderTheme(){const w=document.getElementById('themeEditor');w.innerHTML=[
+  themeField('Fondo general','theme.background'),themeField('Fondo secundario','theme.backgroundSoft'),themeField('Superficie','theme.surface'),themeField('Superficie 2','theme.surface2'),themeField('Cabecera','theme.headerBackground'),themeField('Pie de página','theme.footerBackground'),
+  themeField('Logo base','theme.brandBaseColor'),themeField('Logo destacado','theme.brandAccentColor'),themeField('Texto superior portada','theme.heroEyebrow'),
+  themeField('Texto principal','theme.text'),themeField('Texto secundario','theme.muted'),themeField('Menú','theme.navText'),themeField('Menú hover','theme.navHover'),themeField('Texto del pie','theme.footerText'),
+  themeField('Color principal','theme.primary'),themeField('Color secundario','theme.secondary'),themeField('Kick','theme.kick'),themeField('Color de bordes','theme.borderColor'),themeField('Línea de secciones','theme.sectionLine'),
+  themeField('Fondo de tarjetas','theme.cardBackground'),themeField('Texto de tarjetas','theme.cardText'),themeField('Texto secundario tarjetas','theme.cardMuted'),themeField('Fondo tarjetas sociales','theme.socialCardBackground'),themeField('Fondo Instagram/Cultura','theme.cultureCardBackground'),themeField('Fondo Avisos','theme.noticeCardBackground'),themeField('Fondo Próximo stream','theme.upcomingCardBackground'),themeField('Fondo tarjeta Live','theme.liveCardBackground'),
+  themeField('Botón gradiente inicio','theme.buttonGradientStart'),themeField('Botón gradiente final','theme.buttonGradientEnd'),themeField('Texto botón gradiente','theme.buttonText'),themeField('Botón oscuro','theme.buttonDark'),themeField('Texto botón oscuro','theme.buttonDarkText'),themeField('Texto botón contorno','theme.buttonOutlineText'),
+  themeField('Fondo etiquetas','theme.badgeBackground'),themeField('Texto etiquetas','theme.badgeText'),themeField('Borde etiquetas','theme.badgeBorder'),
+  themeField('Luz izquierda portada','theme.heroGlowLeft'),themeField('Luz centro portada','theme.heroGlowCenter'),themeField('Luz derecha portada','theme.heroGlowRight'),themeField('Haz rosa','theme.heroBeamPink'),themeField('Haz azul','theme.heroBeamBlue'),
+  themeField('Título blanco STREAM','theme.heroTitleWhite'),themeField('Título NICO','theme.heroTitleNeon'),themeField('Texto portada','theme.heroText'),themeField('Título blanco secciones','theme.sectionTitleWhite'),themeField('Título neon secciones','theme.sectionTitleNeon'),
+  themeField('Fondo contador','theme.countdownBackground'),themeField('Números contador','theme.countdownNumber'),themeField('Etiquetas contador','theme.countdownLabel'),themeField('Botón flotante','theme.floatingButton'),themeField('X botón flotante','theme.floatingButtonText'),themeField('Fondo aviso preview','theme.previewRibbonBackground'),themeField('Texto aviso preview','theme.previewRibbonText'),
+  themeField('Opacidad de bordes','theme.borderAlpha','range','.02','.65','.01'),themeField('Redondeo','theme.radius','range','8','60','1'),themeField('Intensidad base de luces','theme.glowStrength','range','0','1','.01')
+].join('');w.querySelectorAll('[data-theme-color]').forEach(e=>e.oninput=()=>{const path=e.dataset.themeColor;setByPath(draft,path,e.value);const text=w.querySelector(`[data-theme-text="${CSS.escape(path)}"]`);if(text)text.value=e.value;syncPathPeers(path,null);previewSignature='';markDirty()});w.querySelectorAll('[data-theme-text]').forEach(e=>e.oninput=()=>{const path=e.dataset.themeText;setByPath(draft,path,e.value);if(/^#[0-9a-fA-F]{6}$/.test(e.value)){const color=w.querySelector(`[data-theme-color="${CSS.escape(path)}"]`);if(color)color.value=e.value;}syncPathPeers(path,null);previewSignature='';markDirty()});w.querySelectorAll('[data-theme-number]').forEach(e=>e.oninput=()=>{setByPath(draft,e.dataset.themeNumber,Number(e.value));previewSignature='';markDirty()})}
+function renderStats(){const w=document.getElementById("statsEditor");w.innerHTML="";(draft.liveStats||[]).slice(0,3).forEach((s,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Bloque informativo ${i+1}</h3></div><div class="subcard-grid"><label>Texto grande<input placeholder="Ej: IRL" data-stat="${i}" data-field="value" value="${esc(s.value)}"></label><label>Texto pequeño<input placeholder="Ej: DIRECTOS" data-stat="${i}" data-field="label" value="${esc(s.label)}"></label></div>`;w.appendChild(d)});w.querySelectorAll("input").forEach(e=>e.oninput=()=>{draft.liveStats[Number(e.dataset.stat)][e.dataset.field]=e.value;previewSignature="";markDirty()})}
+function renderNav(){const w=document.getElementById('navEditor');w.innerHTML='';(draft.navLinks||[]).forEach((n,i)=>{const d=document.createElement('div');d.className='subcard';d.innerHTML=`<div class="subcard-head"><h3>Enlace ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-nav="${i}">↑</button><button class="icon-btn" data-down-nav="${i}">↓</button><button class="icon-btn danger" data-remove-nav="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-nav="${i}" data-field="enabled" ${n.enabled!==false?'checked':''}></label><label>Texto<input data-nav="${i}" data-field="label" value="${esc(n.label)}"></label><label>Destino / URL<input data-nav="${i}" data-field="target" value="${esc(n.target)}"></label></div>`;w.appendChild(d)});w.querySelectorAll('[data-nav]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{draft.navLinks[Number(e.dataset.nav)][e.dataset.field]=e.type==='checkbox'?e.checked:e.value;previewSignature='';markDirty()}));w.querySelectorAll('[data-remove-nav]').forEach(b=>b.onclick=()=>{draft.navLinks.splice(Number(b.dataset.removeNav),1);renderNav();previewSignature='';markDirty()});w.querySelectorAll('[data-up-nav]').forEach(b=>b.onclick=()=>moveArray(draft.navLinks,Number(b.dataset.upNav),-1,renderNav));w.querySelectorAll('[data-down-nav]').forEach(b=>b.onclick=()=>moveArray(draft.navLinks,Number(b.dataset.downNav),1,renderNav))}
+function renderSocials(){const w=document.getElementById("socialEditor");w.innerHTML="";(draft.socials||[]).forEach((s,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>${esc(s.label||`Red ${i+1}`)}</h3><div class="sub-actions"><button class="icon-btn" data-up-social="${i}">↑</button><button class="icon-btn" data-down-social="${i}">↓</button><button class="icon-btn danger" data-remove-social="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-social="${i}" data-field="enabled" ${s.enabled!==false?"checked":""}></label><label>Etiqueta<input data-social="${i}" data-field="label" value="${esc(s.label)}"></label><label>Usuario / @<input data-social="${i}" data-field="handle" value="${esc(s.handle)}"></label><label class="full">URL<input data-social="${i}" data-field="url" value="${esc(s.url)}"></label><label>Color de hover<input data-social="${i}" data-field="color" value="${esc(s.color)}"></label><label>Icono corto<input data-social="${i}" data-field="icon" value="${esc(s.icon)}"></label>${imageField(`socials.${i}.image`,s.image,'Imagen opcional de la red')}</div>`;w.appendChild(d)});w.querySelectorAll("[data-social]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{draft.socials[Number(e.dataset.social)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;markDirty()}));w.querySelectorAll("[data-remove-social]").forEach(b=>b.onclick=()=>{draft.socials.splice(Number(b.dataset.removeSocial),1);renderSocials();bindImages();markDirty()});w.querySelectorAll('[data-up-social]').forEach(b=>b.onclick=()=>moveArray(draft.socials,Number(b.dataset.upSocial),-1,()=>{renderSocials();bindImages()}));w.querySelectorAll('[data-down-social]').forEach(b=>b.onclick=()=>moveArray(draft.socials,Number(b.dataset.downSocial),1,()=>{renderSocials();bindImages()}))}
+function imageField(path,value,label='Imagen'){return`<div class="image-field full"><label>${label}<input value="${esc(value||"")}" data-array-image-path="${esc(path)}"></label><label class="upload-label">SUBIR<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" data-array-upload-path="${esc(path)}"></label><small>Se mostrará sin filtros de color.</small></div>`}
+const CULTURE_PLATFORM_OPTIONS=[['instagram','Instagram'],['tiktok','TikTok'],['kick','Kick'],['youtube','YouTube'],['x','X'],['discord','Discord'],['twitch','Twitch'],['custom','Otra / personalizada']];
+function culturePlatformSelect(value){return CULTURE_PLATFORM_OPTIONS.map(([v,l])=>`<option value="${v}" ${String(value||'instagram')===v?'selected':''}>${l}</option>`).join('')}
+let culturePreviewTimer=0;
+function queueCulturePreview(){
+  clearTimeout(culturePreviewTimer);
+  culturePreviewTimer=setTimeout(()=>{activePanelId='cultureAdmin';lastSyncedPanel='cultureAdmin';writePreview(false)},220);
+}
+function renderCultureEditor(){
+  const w=document.getElementById('cultureEditor');if(!w)return;w.innerHTML='';
+  (draft.culture?.items||[]).forEach((x,i)=>{
+    const d=document.createElement('div');d.className='subcard';
+    d.innerHTML=`<div class="subcard-head"><h3>Tarjeta cultura ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-culture="${i}">↑</button><button class="icon-btn" data-down-culture="${i}">↓</button><button class="icon-btn danger" data-remove-culture="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-culture="${i}" data-field="enabled" ${x.enabled!==false?'checked':''}></label><label>Red / plataforma<select data-culture="${i}" data-field="platform">${culturePlatformSelect(x.platform)}</select></label><label>Nombre visible de la red (opcional)<input data-culture="${i}" data-field="platformLabel" value="${esc(x.platformLabel||'')}" placeholder="Vacío = usa el nombre de la red"></label><label>Título<input data-culture="${i}" data-field="title" value="${esc(x.title||'')}"></label><label>Texto opcional<input data-culture="${i}" data-field="text" value="${esc(x.text||'')}"></label><label>Símbolo personalizado (solo si eliges Otra)<input data-culture="${i}" data-field="badge" value="${esc(x.badge||'')}" placeholder="Ej: ★"></label><label class="full">URL<input data-culture="${i}" data-field="url" value="${esc(x.url||'')}"></label>${imageField(`culture.items.${i}.image`,x.image,'Imagen')}</div>`;
+    w.appendChild(d)
+  });
+  w.querySelectorAll('[data-culture]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':(e.tagName==='SELECT'?'change':'input'),()=>{draft.culture.items[Number(e.dataset.culture)][e.dataset.field]=e.type==='checkbox'?e.checked:e.value;markDirty();queueCulturePreview()}));
+  w.querySelectorAll('[data-remove-culture]').forEach(b=>b.onclick=()=>{draft.culture.items.splice(Number(b.dataset.removeCulture),1);renderCultureEditor();bindImages();markDirty();queueCulturePreview()});
+  w.querySelectorAll('[data-up-culture]').forEach(b=>b.onclick=()=>moveArray(draft.culture.items,Number(b.dataset.upCulture),-1,()=>{renderCultureEditor();bindImages();queueCulturePreview()}));
+  w.querySelectorAll('[data-down-culture]').forEach(b=>b.onclick=()=>moveArray(draft.culture.items,Number(b.dataset.downCulture),1,()=>{renderCultureEditor();bindImages();queueCulturePreview()}));
+}
+function renderFeatured(){const w=document.getElementById("featuredEditor");w.innerHTML="";(draft.featured||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Tarjeta ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-featured="${i}">↑</button><button class="icon-btn" data-down-featured="${i}">↓</button><button class="icon-btn danger" data-remove-featured="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-featured="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Kicker<input data-featured="${i}" data-field="kicker" value="${esc(x.kicker)}"></label><label>Título<input data-featured="${i}" data-field="title" value="${esc(x.title)}"></label><label class="full">Subtítulo<input data-featured="${i}" data-field="subtitle" value="${esc(x.subtitle)}"></label><label class="full">URL<input data-featured="${i}" data-field="url" value="${esc(x.url)}"></label><label>Color glow / borde<input data-featured="${i}" data-field="glow" value="${esc(x.glow)}"></label>${imageField(`featured.${i}.image`,x.image,'Imagen principal')}${imageField(`featured.${i}.badgeImage`,x.badgeImage,'Imagen/logo central (opcional)')}</div>`;w.appendChild(d)});w.querySelectorAll("[data-featured]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{draft.featured[Number(e.dataset.featured)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;previewSignature="";markDirty()}));w.querySelectorAll("[data-remove-featured]").forEach(b=>b.onclick=()=>{draft.featured.splice(Number(b.dataset.removeFeatured),1);renderFeatured();bindImages();previewSignature="";markDirty()});w.querySelectorAll('[data-up-featured]').forEach(b=>b.onclick=()=>moveArray(draft.featured,Number(b.dataset.upFeatured),-1,()=>{renderFeatured();bindImages()}));w.querySelectorAll('[data-down-featured]').forEach(b=>b.onclick=()=>moveArray(draft.featured,Number(b.dataset.downFeatured),1,()=>{renderFeatured();bindImages()}))}
+function renderClips(){const w=document.getElementById("clipsEditor");w.innerHTML="";(draft.clips||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Clip ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-clip="${i}">↑</button><button class="icon-btn" data-down-clip="${i}">↓</button><button class="icon-btn danger" data-remove-clip="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-clip="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Título<input data-clip="${i}" data-field="title" value="${esc(x.title)}"></label><label>Subtítulo<input data-clip="${i}" data-field="subtitle" value="${esc(x.subtitle)}"></label><label class="full">URL<input data-clip="${i}" data-field="url" value="${esc(x.url)}"></label>${imageField(`clips.${i}.image`,x.image)}</div>`;w.appendChild(d)});w.querySelectorAll("[data-clip]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{draft.clips[Number(e.dataset.clip)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;previewSignature="";markDirty()}));w.querySelectorAll("[data-remove-clip]").forEach(b=>b.onclick=()=>{draft.clips.splice(Number(b.dataset.removeClip),1);renderClips();bindImages();previewSignature="";markDirty()});w.querySelectorAll('[data-up-clip]').forEach(b=>b.onclick=()=>moveArray(draft.clips,Number(b.dataset.upClip),-1,()=>{renderClips();bindImages()}));w.querySelectorAll('[data-down-clip]').forEach(b=>b.onclick=()=>moveArray(draft.clips,Number(b.dataset.downClip),1,()=>{renderClips();bindImages()}))}
+function renderCustomSections(){const w=document.getElementById('customSectionEditor');w.innerHTML='';(draft.customSections||[]).forEach((s,i)=>{const d=document.createElement('div');d.className='subcard';d.innerHTML=`<div class="subcard-head"><h3>Sección extra ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-custom="${i}">↑</button><button class="icon-btn" data-down-custom="${i}">↓</button><button class="icon-btn danger" data-remove-custom="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-custom="${i}" data-field="enabled" ${s.enabled!==false?'checked':''}></label><label>Tag<input data-custom="${i}" data-field="kicker" value="${esc(s.kicker)}"></label><label>ID / ancla<input data-custom="${i}" data-field="anchorId" value="${esc(s.anchorId)}"></label><label>Título blanco<input data-custom="${i}" data-field="title1" value="${esc(s.title1)}"></label><label>Título neon<input data-custom="${i}" data-field="title2" value="${esc(s.title2)}"></label><label class="full">Texto<textarea data-custom="${i}" data-field="text">${esc(s.text)}</textarea></label><label>Botón CTA<input data-custom="${i}" data-field="ctaLabel" value="${esc(s.ctaLabel)}"></label><label>URL CTA<input data-custom="${i}" data-field="ctaUrl" value="${esc(s.ctaUrl)}"></label>${imageField(`customSections.${i}.image`,s.image)}</div>`;w.appendChild(d)});w.querySelectorAll('[data-custom]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{draft.customSections[Number(e.dataset.custom)][e.dataset.field]=e.type==='checkbox'?e.checked:e.value;previewSignature='';markDirty()}));w.querySelectorAll('[data-remove-custom]').forEach(b=>b.onclick=()=>{draft.customSections.splice(Number(b.dataset.removeCustom),1);renderCustomSections();bindImages();previewSignature='';markDirty()});w.querySelectorAll('[data-up-custom]').forEach(b=>b.onclick=()=>moveArray(draft.customSections,Number(b.dataset.upCustom),-1,()=>{renderCustomSections();bindImages()}));w.querySelectorAll('[data-down-custom]').forEach(b=>b.onclick=()=>moveArray(draft.customSections,Number(b.dataset.downCustom),1,()=>{renderCustomSections();bindImages()}))}
+function renderAnnouncements(){const w=document.getElementById("announcementEditor");if(!w)return;w.innerHTML="";(draft.announcements||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Aviso ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-announcement="${i}">↑</button><button class="icon-btn" data-down-announcement="${i}">↓</button><button class="icon-btn danger" data-remove-announcement="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-announcement="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Etiqueta pequeña<input data-announcement="${i}" data-field="kicker" value="${esc(x.kicker||'AVISO')}"></label><label>Lugar / chip<input data-announcement="${i}" data-field="chip" value="${esc(x.chip||'')}"></label><label class="full">Título<input data-announcement="${i}" data-field="title" value="${esc(x.title||'')}"></label><label class="full">Texto<textarea data-announcement="${i}" data-field="text">${esc(x.text||'')}</textarea></label><label>Texto botón externo<input data-announcement="${i}" data-field="cta" value="${esc(x.cta||'')}"></label><label>URL botón externo<input data-announcement="${i}" data-field="url" value="${esc(x.url||'#')}"></label>${imageField(`announcements.${i}.image`,x.image,'Imagen del aviso')}</div>`;w.appendChild(d)});w.querySelectorAll('[data-announcement]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{const item=draft.announcements[Number(e.dataset.announcement)];item[e.dataset.field]=e.type==='checkbox'?e.checked:e.value;markDirty()}));w.querySelectorAll('[data-remove-announcement]').forEach(b=>b.onclick=()=>{draft.announcements.splice(Number(b.dataset.removeAnnouncement),1);renderAnnouncements();bindImages();markDirty()});w.querySelectorAll('[data-up-announcement]').forEach(b=>b.onclick=()=>moveArray(draft.announcements,Number(b.dataset.upAnnouncement),-1,()=>{renderAnnouncements();bindImages()}));w.querySelectorAll('[data-down-announcement]').forEach(b=>b.onclick=()=>moveArray(draft.announcements,Number(b.dataset.downAnnouncement),1,()=>{renderAnnouncements();bindImages()}))}
+function renderSections(){const labels={live:'En vivo',socials:'Redes',culture:'Instagram',featured:'Destacado',clips:'Clips',upcoming:'Próximo stream',announcements:'Avisos',about:'Sobre mí',custom:'Extra'};const w=document.getElementById("sectionEditor");w.innerHTML="";(draft.sectionOrder||[]).forEach((k,i)=>{const r=document.createElement("div");r.className="section-row";r.innerHTML=`<input type="checkbox" ${draft.sections?.[k]!==false?"checked":""} data-section-toggle="${esc(k)}"><span class="section-name">${esc(labels[k]||k)}</span><button class="icon-btn" data-up="${i}">↑</button><button class="icon-btn" data-down="${i}">↓</button>`;w.appendChild(r)});w.querySelectorAll("[data-section-toggle]").forEach(e=>e.onchange=()=>{draft.sections[e.dataset.sectionToggle]=e.checked;previewSignature="";markDirty()});w.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>moveArray(draft.sectionOrder,Number(b.dataset.up),-1,renderSections));w.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>moveArray(draft.sectionOrder,Number(b.dataset.down),1,renderSections))}
+function moveArray(arr,index,dir,after){const n=index+dir;if(n<0||n>=arr.length)return;[arr[index],arr[n]]=[arr[n],arr[index]];previewSignature='';after();markDirty()}
+async function fileToDataUrl(file){
+  if(!new Set(["image/jpeg","image/png","image/webp","image/gif"]).has(file.type))throw new Error("Usa JPG, PNG, WEBP o GIF.");
+  if(file.size>10*1024*1024)throw new Error("La imagen supera 10 MB. Usa una imagen más liviana.");
+  const raw=()=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(new Error("No se pudo leer la imagen."));r.readAsDataURL(file)});
+  if(file.type==="image/gif")return await raw();
+  try{
+    const url=URL.createObjectURL(file);const img=await new Promise((ok,no)=>{const el=new Image();el.onload=()=>ok(el);el.onerror=()=>no(new Error("No se pudo procesar la imagen."));el.src=url});
+    const max=1800,scale=Math.min(1,max/Math.max(img.naturalWidth||1,img.naturalHeight||1)),w=Math.max(1,Math.round(img.naturalWidth*scale)),h=Math.max(1,Math.round(img.naturalHeight*scale));
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;canvas.getContext("2d",{alpha:true}).drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+    const blob=await new Promise(ok=>canvas.toBlob(ok,"image/webp",.88));if(!blob)return await raw();
+    return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(new Error("No se pudo guardar la imagen optimizada."));r.readAsDataURL(blob)});
+  }catch{return await raw()}
+}
+async function handleUpload(file,path){if(!file)return;try{status("Procesando imagen...");const url=window.CloudConfig.enabled()?await window.CloudConfig.uploadImage(file):await fileToDataUrl(file);setByPath(draft,path,url);renderAll();markDirty();if(String(path||"").startsWith("culture.items.")){activePanelId="cultureAdmin";queueCulturePreview()}status("Imagen lista. Pulsa VISTA PREVIA para revisarla ✓")}catch(e){status(e.message,false)}}
+function bindImages(){document.querySelectorAll("[data-upload-target]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.onchange=()=>handleUpload(e.files?.[0],e.dataset.uploadTarget)});document.querySelectorAll("[data-array-image-path]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.oninput=()=>{setByPath(draft,e.dataset.arrayImagePath,e.value);previewSignature="";markDirty();if(String(e.dataset.arrayImagePath||"").startsWith("culture.items.")){activePanelId="cultureAdmin";queueCulturePreview()}}});document.querySelectorAll("[data-array-upload-path]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.onchange=()=>handleUpload(e.files?.[0],e.dataset.arrayUploadPath)})}
+function renderAll(){document.querySelectorAll("[data-path]").forEach(e=>delete e.dataset.bound);bindSimpleFields();renderTheme();renderStats();renderNav();renderSocials();renderCultureEditor();renderSections();renderFeatured();renderClips();renderAnnouncements();renderCustomSections();bindImages();updateActionState()}
+function getFrameScroll(frame){try{return frame?.contentWindow?{x:frame.contentWindow.scrollX||0,y:frame.contentWindow.scrollY||0}:{x:0,y:0}}catch{return{x:0,y:0}}}
+function frameReady(frame){try{return !!(frame?.contentDocument?.documentElement&&frame.contentWindow)}catch{return false}}
+const PANEL_TO_PREVIEW={general:'#hero',nav:'#hero',theme:'#hero',effects:'#hero',live:'#liveSection',socials:'#socials',cultureAdmin:'#culture',featured:'#featured',clips:'#clips',upcoming:'#upcoming',announcement:'#announcements',about:'#about',extras:'#customSectionContainer',sections:'#dynamicSections',history:'footer'};
+const PANEL_LABELS={general:'PORTADA',nav:'PORTADA',theme:'PORTADA',effects:'PORTADA',live:'KICK / EN VIVO',socials:'REDES',cultureAdmin:'INSTAGRAM',featured:'DESTACADO',clips:'CLIPS',upcoming:'PRÓXIMO STREAM',announcement:'AVISOS',about:'SOBRE MÍ',extras:'EXTRA',sections:'SECCIONES',history:'PIE / HISTORIAL'};
+let activePanelId='general',syncRAF=0,lastSyncedPanel='';
+function scrollPreviewFrame(frameId,target,force=false){
+  try{
+    const frame=document.getElementById(frameId);if(!frameReady(frame)||!target)return;
+    if(!force&&frame.dataset.syncedTarget===target)return;
+    const doc=frame.contentDocument,win=frame.contentWindow;
+    const el=doc.querySelector(target)||doc.getElementById(String(target).replace(/^#/,''));if(!el)return;
+    const header=doc.querySelector('.site-header');
+    const headerH=header?Math.ceil(header.getBoundingClientRect().height):0;
+    const y=Math.max(0,Math.round(el.getBoundingClientRect().top+win.scrollY-headerH-12));
+    frame.dataset.syncedTarget=target;
+    if(Math.abs((win.scrollY||0)-y)>2)win.scrollTo(0,y);
+  }catch{}
+}
+function syncPreviewToPanel(panelId,force=false){
+  activePanelId=panelId||activePanelId;
+  const target=PANEL_TO_PREVIEW[activePanelId];if(!target)return;
+  scrollPreviewFrame('previewFrame',target,force);
+  const full=document.getElementById('fullPreviewModal');
+  if(full&&!full.classList.contains('hidden'))scrollPreviewFrame('fullPreviewFrame',target,force);
+  const label=document.getElementById('previewSectionLabel');if(label)label.textContent=PANEL_LABELS[activePanelId]||activePanelId.toUpperCase();
+  document.querySelectorAll('.admin-sidebar nav a').forEach(a=>{
+    const active=(a.getAttribute('href')||'')===`#${activePanelId}`;
+    a.classList.toggle('active',active);
+    if(active&&window.innerWidth<=760)a.scrollIntoView({block:'nearest',inline:'center'});
+  });
+}
+function adminProbeY(){
+  const topbar=document.querySelector('.admin-topbar')?.getBoundingClientRect();
+  if(window.innerWidth<=760){
+    const preview=document.querySelector('.preview')?.getBoundingClientRect();
+    const sidebar=document.querySelector('.admin-sidebar')?.getBoundingClientRect();
+    return Math.min(window.innerHeight-24,Math.max(topbar?.bottom||0,preview?.bottom||0,sidebar?.bottom||0)+14);
+  }
+  return Math.min(window.innerHeight*.32,(topbar?.bottom||70)+48);
+}
+function currentAdminPanel(){
+  const panels=[...document.querySelectorAll('.editor .panel')];if(!panels.length)return null;
+  const probe=adminProbeY();
+  const containing=panels.find(panel=>{const r=panel.getBoundingClientRect();return r.top<=probe&&r.bottom>probe});
+  if(containing)return containing;
+  let best=panels[0],score=Infinity;
+  panels.forEach(panel=>{const r=panel.getBoundingClientRect();const scoreNow=Math.min(Math.abs(r.top-probe),Math.abs(r.bottom-probe));if(scoreNow<score){score=scoreNow;best=panel}});
+  return best;
+}
+function schedulePreviewSync(){
+  if(syncRAF)return;
+  syncRAF=requestAnimationFrame(()=>{syncRAF=0;const panel=currentAdminPanel();if(panel&&panel.id!==lastSyncedPanel){lastSyncedPanel=panel.id;syncPreviewToPanel(panel.id,false)}});
+}
+function setMobileEditing(on){if(window.innerWidth<=760){document.body.classList.toggle('mobile-editing',!!on);requestAnimationFrame(schedulePreviewSync)}}
+function installPreviewSync(){
+  const nav=[...document.querySelectorAll('.admin-sidebar nav a')];
+  nav.forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const id=(a.getAttribute('href')||'').replace('#','');
+    const panel=document.getElementById(id);if(!panel)return;
+    activePanelId=id;lastSyncedPanel=id;
+    panel.scrollIntoView({behavior:'auto',block:'start'});
+    try{history.replaceState(null,'',`#${id}`)}catch{}
+    syncPreviewToPanel(id,true);
+  }));
+  const editor=document.querySelector('.editor');
+  editor?.addEventListener('focusin',e=>{
+    const panel=e.target.closest('.panel');if(panel){activePanelId=panel.id;lastSyncedPanel=panel.id;syncPreviewToPanel(panel.id,false)}
+    if(e.target.matches('input,textarea,select'))setMobileEditing(true);
+  });
+  editor?.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.editor')&&a.matches('input,textarea,select')))setMobileEditing(false)},80));
+  window.addEventListener('scroll',schedulePreviewSync,{passive:true});
+  window.addEventListener('resize',schedulePreviewSync,{passive:true});
+  document.getElementById('previewFrame')?.addEventListener('load',()=>requestAnimationFrame(()=>syncPreviewToPanel(activePanelId,true)));
+  document.getElementById('fullPreviewFrame')?.addEventListener('load',()=>requestAnimationFrame(()=>syncPreviewToPanel(activePanelId,true)));
+  schedulePreviewSync();
+}
+async function writePreview(includeFull=false){
+  const f1=document.getElementById('previewFrame'),f2=document.getElementById('fullPreviewFrame');
+  const p1=getFrameScroll(f1),target=PANEL_TO_PREVIEW[activePanelId];
+  try{await window.LocalConfigDB.set(PREVIEW_KEY,draft);}catch(e){status("No se pudo preparar la vista previa: "+(e.message||e),false);return;}
+  previewSignature=previewToken();
+  const u=`index.html?preview=1&t=${Date.now()}`;
+  const reload=(frame,pos)=>{
+    if(!frame)return;
+    frame.dataset.syncedTarget='';
+    frame.addEventListener('load',()=>requestAnimationFrame(()=>{if(target)scrollPreviewFrame(frame.id,target,true);else try{frame.contentWindow.scrollTo(pos.x,pos.y)}catch{}}),{once:true});
+    frame.src=u;
+  };
+  reload(f1,p1);
+  if(includeFull)reload(f2,getFrameScroll(f2));
+  updateActionState();
+  status('Vista previa actualizada ✓');
+}
+
+function countDifferences(a,b){let c=0;function walk(x,y){if(x===y)return;if(typeof x!==typeof y){c++;return}if(x===null||y===null||typeof x!=="object"){c++;return}if(Array.isArray(x)||Array.isArray(y)){if(!Array.isArray(x)||!Array.isArray(y)){c++;return}if(x.length!==y.length)c++;const n=Math.min(x.length,y.length);for(let i=0;i<n;i++)walk(x[i],y[i]);return}const ks=new Set([...Object.keys(x||{}),...Object.keys(y||{})]);ks.forEach(k=>walk(x?.[k],y?.[k]))}walk(a,b);return c}
+async function publish(){
+  if(!previewSignature||previewSignature!==previewToken()){status("Primero revisa la vista previa más reciente.",false);return}
+  try{
+    if(window.CloudConfig.enabled()){
+      status("Publicando en la nube y sincronizando imágenes...");
+      const saved=await window.CloudConfig.publish(draft);
+      if(saved) draft=normalizeConfig(saved);
+      cloudBootstrapDraft=null;
+    }else{
+      let rev=await window.LocalConfigDB.get(LOCAL_REVISIONS_KEY);
+      if(!Array.isArray(rev))rev=[];
+      rev.unshift({id:Date.now(),created_at:new Date().toISOString(),config:published});
+      await window.LocalConfigDB.set(LOCAL_REVISIONS_KEY,rev.slice(0,6));
+      await window.LocalConfigDB.set(LIVE_KEY,draft);
+    }
+    published=clone(draft);
+    await window.LocalConfigDB.remove(PREVIEW_KEY);
+    markClean();
+    status("PUBLICADO Y SINCRONIZADO ✓");
+    await loadHistory();
+  }catch(e){status(e.message||"Error al publicar",false)}
+}
+async function loadHistory(){const w=document.getElementById("historyList");w.innerHTML="";let list=[];try{if(window.CloudConfig.enabled())list=await window.CloudConfig.listRevisions(12);else{list=await window.LocalConfigDB.migrateFromLocalStorage(LOCAL_REVISIONS_KEY);if(!Array.isArray(list))list=[];}}catch(e){w.textContent=e.message;return}if(!list.length){w.textContent="Aún no hay versiones anteriores.";return}list.forEach((r,i)=>{const row=document.createElement("div");row.className="history-item";const info=document.createElement("div"),strong=document.createElement("strong"),small=document.createElement("small"),btn=document.createElement("button");strong.textContent=`Versión ${i+1}`;small.textContent=new Date(r.created_at).toLocaleString();info.append(strong,document.createElement("br"),small);btn.textContent="CARGAR COMO BORRADOR";btn.onclick=()=>{draft=normalizeConfig(r.config||{});renderAll();markDirty();status("Versión cargada como borrador. Revisa la vista previa antes de publicar.")};row.append(info,btn);w.appendChild(row)})}
+
+function setViewport(t,m){t.classList.remove('mobile','tablet','desktop');t.classList.add(m)}
+document.querySelectorAll("[data-viewport]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-viewport]").forEach(x=>x.classList.remove("active"));b.classList.add("active");setViewport(document.getElementById("deviceShell"),b.dataset.viewport)});document.querySelectorAll("[data-full-viewport]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-full-viewport]").forEach(x=>x.classList.remove("active"));b.classList.add("active");setViewport(document.getElementById("fullDevice"),b.dataset.fullViewport)});
+document.getElementById("previewBtn").onclick=()=>writePreview(false);document.getElementById("refreshPreview").onclick=()=>writePreview(false);document.getElementById("fullPreviewBtn").onclick=async()=>{document.getElementById("fullPreviewModal").classList.remove("hidden");await writePreview(true)};document.getElementById("closeFullPreview").onclick=()=>document.getElementById("fullPreviewModal").classList.add("hidden");
+document.getElementById("publishBtn").onclick=()=>{if(previewSignature!==previewToken()){status("Primero revisa la vista previa más reciente.",false);return}document.getElementById("publishSummary").textContent=`${countDifferences(published,draft)} bloque(s) de configuración cambiaron desde la versión publicada.`;document.getElementById("publishConfirmInput").value="";document.getElementById("confirmPublish").disabled=true;document.getElementById("publishModal").classList.remove("hidden")};document.getElementById("cancelPublish").onclick=()=>document.getElementById("publishModal").classList.add("hidden");document.getElementById("publishConfirmInput").oninput=e=>document.getElementById("confirmPublish").disabled=e.target.value.trim().toUpperCase()!=="PUBLICAR";document.getElementById("confirmPublish").onclick=async()=>{document.getElementById("publishModal").classList.add("hidden");await publish()};
+document.getElementById("discardBtn").onclick=async()=>{draft=clone(published);await window.LocalConfigDB.remove(PREVIEW_KEY);renderAll();markClean();status("Borrador descartado.")};document.getElementById("addNavBtn").onclick=()=>{draft.navLinks.push({id:uid('nav'),label:'NUEVO ENLACE',target:'#',enabled:true});renderNav();previewSignature='';markDirty()};document.getElementById('addCultureItemBtn').onclick=()=>{draft.culture.items.push({id:uid('ig'),title:'NUEVA FOTO',text:'',platform:'instagram',platformLabel:'',badge:'',image:'',url:draft.culture.ctaUrl||'#',enabled:true});renderCultureEditor();bindImages();previewSignature='';markDirty();activePanelId='cultureAdmin';queueCulturePreview()};document.getElementById("addSocialBtn").onclick=()=>{draft.socials.push({id:uid("social"),label:"Nueva red",handle:"@handle",url:"#",color:"#ffffff",icon:"+",image:"",enabled:true});renderSocials();previewSignature="";markDirty()};document.getElementById("addFeaturedBtn").onclick=()=>{draft.featured.push({id:uid("feature"),kicker:"NEW",title:"NUEVA TARJETA",subtitle:"",url:"#",image:"",badgeImage:"",glow:"#ff2db7",enabled:true});renderFeatured();bindImages();previewSignature="";markDirty()};document.getElementById("addClipBtn").onclick=()=>{draft.clips.push({id:uid("clip"),title:"NUEVO CLIP",subtitle:"",url:"#",image:"",enabled:true});renderClips();bindImages();previewSignature="";markDirty()};document.getElementById('addAnnouncementBtn').onclick=()=>{draft.announcements.push({id:uid('notice'),enabled:true,kicker:'AVISO',title:'NUEVO AVISO',chip:'',text:'',cta:'',url:'#',image:''});renderAnnouncements();bindImages();markDirty()};document.getElementById('addCustomSectionBtn').onclick=()=>{draft.customSections.push({id:uid('custom'),kicker:'NUEVA SECCIÓN',title1:'NUEVO',title2:'BLOQUE.',text:'',ctaLabel:'ABRIR',ctaUrl:'#',image:'',enabled:true,anchorId:''});renderCustomSections();bindImages();previewSignature='';markDirty()};document.getElementById("refreshHistoryBtn").onclick=loadHistory;
+document.getElementById("loginBtn").onclick=async()=>{const email=document.getElementById("loginEmail").value.trim(),password=document.getElementById("loginPassword").value,err=document.getElementById("loginError");err.textContent="";if(!email.includes('@')){err.textContent='En la nube segura el usuario se autentica con el correo de administrador. No se guarda ninguna contraseña en el código.';return}try{await window.CloudConfig.signIn(email,password);location.reload()}catch(e){err.textContent=e.message||"No se pudo iniciar sesión."}};document.getElementById("logoutBtn").onclick=async()=>{await window.CloudConfig.signOut();location.reload()};
+function isLocalDevelopment(){const h=location.hostname;return location.protocol==="file:"||h==="localhost"||h==="127.0.0.1"||h==="::1"||/^192\.168\./.test(h)||/^10\./.test(h)||/^172\.(1[6-9]|2\d|3[01])\./.test(h)}
+async function boot(){
+  const cloud=window.CloudConfig.enabled(),local=isLocalDevelopment();
+  document.getElementById("modeBadge").textContent=cloud?"NUBE SEGURA":"MODO LOCAL";
+  document.getElementById("localNotice").classList.toggle("hidden",cloud);
+  if(!cloud&&!local){
+    document.getElementById("modeBadge").textContent="PANEL BLOQUEADO";
+    document.getElementById("adminView").classList.add("hidden");
+    document.getElementById("loginView").classList.remove("hidden");
+    document.getElementById("loginEmail").disabled=true;
+    document.getElementById("loginPassword").disabled=true;
+    document.getElementById("loginBtn").disabled=true;
+    document.getElementById("loginError").textContent="El panel público está bloqueado hasta configurar Supabase. No existe un usuario o contraseña dentro del código.";
+    return;
+  }
+  if(cloud){
+    await window.CloudConfig.ready();
+    const user=await window.CloudConfig.currentUser(),admin=user?await window.CloudConfig.isAdmin():false;
+    if(!user||!admin){
+      if(user)await window.CloudConfig.signOut();
+      document.getElementById("loginView").classList.remove("hidden");
+      document.getElementById("adminView").classList.add("hidden");
+      return;
+    }
+    document.getElementById("logoutBtn").classList.remove("hidden");
+  }
+  published=await loadPublished();
+  draft=cloudBootstrapDraft?clone(cloudBootstrapDraft):clone(published);
+  renderAll();
+  if(cloudBootstrapDraft){
+    dirty=true;draftRevision++;previewSignature="";updateActionState();
+    status("Configuración local recuperada. Revísala en VISTA PREVIA y publícala una vez para pasarla a la nube ✓");
+  }else markClean();
+  try{await window.LocalConfigDB.set(PREVIEW_KEY,draft);}catch(e){console.warn("Preview DB init failed",e)}
+  installPreviewSync();
+  document.getElementById('previewFrame').src=`index.html?preview=1&t=${Date.now()}`;
+  await loadHistory();
+}
+boot().catch(e=>{console.error(e);const p=document.createElement("pre");p.style.padding="20px";p.style.color="#ff6589";p.textContent=e.message;document.body.appendChild(p)});

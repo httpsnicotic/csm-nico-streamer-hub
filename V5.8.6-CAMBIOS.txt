@@ -1,0 +1,10 @@
+V5.8.6 FINAL POLISH
+- Neón de títulos/subtítulos de sección ampliado a 230%.
+- Glow fuerte para parte blanca y parte neon de todos los títulos de sección.
+- Flechas añadidas a Cultura (cuando es carrusel) y Avisos.
+- Redes conserva mosaico en escritorio y carrusel en móvil.
+- Cultura conserva galería editorial en escritorio y carrusel en móvil.
+- Destacado mantiene carrusel protagonista.
+- Clips mantiene filmstrip horizontal.
+- Avisos mantiene rail de novedades con flechas.
+- Variaciones visuales sutiles para evitar secciones repetidas.

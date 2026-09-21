@@ -1,0 +1,12 @@
+V5.7 RC
+
+- Clips convertidos a carrusel horizontal con swipe y botones anterior/siguiente.
+- Cultura actualiza la vista previa automáticamente al agregar, editar, mover, eliminar o subir imagen.
+- Tarjeta Kick simplificada: se elimina el bloque KICK cuadrado independiente.
+- Foto de Kick más grande.
+- Etiqueta KICK verde con texto negro junto al usuario.
+- LIVE incluye punto visual y conserva el pulso de tarjeta cuando está activo.
+- Próximo stream: título y texto pasan encima de la foto.
+- Foto de próximo stream baja un poco y se usa mejor el espacio vertical.
+- Cuenta regresiva queda pegada a la composición sin huecos grandes.
+- Cache busting actualizado a 5.7.0.

@@ -1,0 +1,14 @@
+V5.4 RC
+=======
+
+- Admin móvil optimizado.
+- Scroll Admin -> Preview sincronizado por sección.
+- Menú activo acompaña el scroll.
+- Preview se compacta al escribir en celular.
+- Eliminada comparación pesada del config en cada tecla.
+- Menos partículas en móvil/preview.
+- Cursor glow desactivado en touch.
+- Supabase se carga solo cuando está configurado.
+- admin.html bloqueado en host público si Supabase no está configurado.
+- No hay contraseñas ni service_role en el frontend.
+- Cache busting 5.4.

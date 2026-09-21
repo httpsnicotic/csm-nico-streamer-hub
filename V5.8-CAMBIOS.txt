@@ -1,0 +1,11 @@
+V5.8 RC
+
+- Se reemplazó el almacenamiento local pesado basado en localStorage por IndexedDB.
+- La configuración publicada, la vista previa y el historial local ahora soportan muchas más imágenes sin superar la cuota de localStorage.
+- Migración automática de configuraciones e historial guardados por versiones anteriores.
+- Las imágenes subidas en modo local se optimizan a WEBP (máximo 1800 px, calidad alta) para reducir peso y lag.
+- La vista previa guarda el borrador en IndexedDB antes de recargar el iframe.
+- El aviso amarillo "CAMBIOS SIN PREVISUALIZAR" desaparece al actualizar correctamente la vista previa.
+- Publicar en modo local guarda hasta 6 revisiones en IndexedDB y ya no falla por streamerHubRevisions_v2 exceeded the quota.
+- Cada tarjeta de "Sigue a la comunidad" ahora admite una imagen opcional desde el panel admin.
+- Cache busting actualizado a 5.8.0.

@@ -1,0 +1,3 @@
+-- ESTE ARCHIVO SE CONSERVA POR COMPATIBILIDAD.
+-- PARA PRODUCCIÓN USA: supabase-secure-setup.sql
+-- Ese archivo contiene las políticas RLS y Storage completas.

@@ -1,0 +1,12 @@
+V5.8.4 FINAL RC
+
+- Brillo de texto de subtítulos independiente: 0–230%.
+- Intensidad de neón de subtítulos: 0–230%.
+- STREAM / texto blanco mantiene rango hasta 230%.
+- Redes en móvil: carrusel horizontal estable con flechas izquierda/derecha.
+- Solucionado el colapso de tarjetas con imagen en móvil.
+- Imágenes sociales llenan la tarjeta con cover y centrado.
+- Franja/ticker animada de forma continua cuando está activada.
+- Cuenta regresiva más compacta sin reducir números.
+- Foto de Próximo stream más larga verticalmente.
+- No se elimina ninguna función existente.

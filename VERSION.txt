@@ -1,0 +1,2 @@
+STREAMER SOCIAL HUB v5.8.7 PRODUCTION
+GitHub Pages + Supabase ready

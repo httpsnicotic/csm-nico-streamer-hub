@@ -1,0 +1,9 @@
+V5.6 RC
+
+- Tarjeta Kick: foto bastante más grande, bloque KICK legible en blanco y pulso verde reforzado cuando LIVE está activo.
+- Próximo stream: diseño limpio sin cuadros anidados, foto vertical grande y cuenta regresiva integrada.
+- Avisos / Novedades: ahora es un carrusel real de múltiples avisos.
+- Cada aviso puede activarse, reordenarse, eliminarse y recibir foto, título, chip, texto y enlace desde el admin.
+- Las fotos de avisos se muestran recortadas en vista previa y se expanden dentro de la misma tarjeta con “Ver foto completa / Ocultar foto”.
+- Migración automática desde el aviso único de V5.5 para conservar contenido existente.
+- Cache busting actualizado a 5.6.0.

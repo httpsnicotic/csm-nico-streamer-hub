@@ -1,0 +1,26 @@
+V5.8.4 FINAL RC
+
+STREAMER HUB 5.4 - CHECKLIST PARA GITHUB
+========================================
+
+[ ] Ejecutar supabase-secure-setup.sql en Supabase.
+[ ] Crear tu cuenta en Authentication > Users.
+[ ] Insertar el UUID de esa cuenta en public.admins.
+[ ] Configurar SOLO url + anonKey en config.js.
+[ ] No usar jamás service_role en estos archivos.
+[ ] Probar login de admin.html.
+[ ] Probar publicar y abrir la web desde otro navegador/dispositivo.
+[ ] Probar subida de imagen.
+[ ] Probar móvil: scroll por General, Redes, Instagram, Destacado, Clips, Próximo y Avisos.
+[ ] Confirmar que el preview acompaña la sección activa.
+[ ] Subir TODOS los archivos de esta carpeta a la raíz del repo.
+[ ] GitHub Settings > Pages > Deploy from branch > main > /(root).
+
+SEGURIDAD
+---------
+GitHub Pages no puede esconder el código HTML/CSS/JS del navegador.
+Eso NO debe ser la barrera de seguridad.
+La barrera real de escritura es Supabase Auth + RLS + public.admins.
+
+En producción, si Supabase NO está configurado, la V5.8.4 bloquea el editor de admin.html automáticamente.
+En localhost, file:// y redes LAN privadas se permite MODO LOCAL para seguir diseñando.

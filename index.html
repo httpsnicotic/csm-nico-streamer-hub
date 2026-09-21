@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050506">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Streamer Hub</title>
+  <meta name="description" content="Directos, redes, clips, anuncios y próximos eventos.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=5.8.8">
+</head>
+<body>
+  <div id="previewRibbon" class="preview-ribbon hidden">VISTA PREVIA · NO PUBLICADO</div>
+  <div class="page-noise"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Inicio"><span id="brandBase">CSM</span><span id="brandAccent">NICO</span></a>
+    <nav class="desktop-nav" id="desktopNav"></nav>
+    <a class="live-pill" id="headerKick" href="#" target="_blank" rel="noopener noreferrer"><i></i><span>KICK</span></a>
+  </header>
+
+  <main id="top">
+    <section class="hero" id="hero">
+      <div class="hero-bg" id="heroBg"></div>
+      <div class="hero-lights" aria-hidden="true"><span class="orb orb-a"></span><span class="orb orb-b"></span><span class="orb orb-c"></span></div>
+      <div class="hero-grid-lines" aria-hidden="true"></div><div class="hero-beam" aria-hidden="true"></div>
+      <div class="hero-inner reveal">
+        <div class="eyebrow"><span>✣</span><span id="eyebrowText">CREADOR · STREAMER · EST. 2026</span></div>
+        <h1 class="hero-title"><span id="heroLine1" class="hero-line white">STREAM</span><span id="heroLine2" class="hero-line gradient-text">NICO.</span></h1>
+        <p class="hero-copy" id="heroDescription">Directos, retos, IRL y momentos que terminan en clip.</p>
+        <div class="hero-actions">
+          <a id="primaryCta" class="btn btn-gradient" href="#" target="_blank" rel="noopener noreferrer">VER EN KICK <b>↗</b></a>
+          <a id="secondaryCta" class="btn btn-dark" href="#socials">SÍGUEME <b>→</b></a>
+          <a id="tertiaryCta" class="btn btn-glass hidden" href="#featured">DESTACADO <b>↗</b></a>
+        </div>
+        <div class="hero-stack reveal">
+          <a id="telegramCta" class="hero-bar hero-telegram" href="#" target="_blank" rel="noopener noreferrer">
+            <svg class="social-svg telegram-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.7 3.5 18.5 19c-.24 1.1-.88 1.37-1.78.85l-4.88-3.6-2.35 2.26c-.26.26-.48.48-.98.48l.35-4.97 9.04-8.17c.39-.35-.09-.55-.61-.2L6.12 12.7l-4.81-1.5c-1.05-.33-1.07-1.05.22-1.55L20.34 2.4c.87-.32 1.63.2 1.36 1.1Z"/></svg>
+            <span id="telegramLabel">NUEVOS LANZAMIENTOS · TELEGRAM</span><b>↗</b>
+          </a>
+          <div class="hero-social-follow">
+            <p id="instagramHint">MANTENTE CONECTADO</p>
+            <span id="instagramText">DETRÁS DE CÁMARAS · ACTUALIZACIONES · MÁS</span>
+            <a id="instagramCta" class="hero-inline-cta" href="#" target="_blank" rel="noopener noreferrer">
+              <svg class="social-svg instagram-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.3" y="3.3" width="17.4" height="17.4" rx="5"/><circle cx="12" cy="12" r="4.1"/><circle cx="17.4" cy="6.8" r="1" class="ig-dot"/></svg>
+              <span id="instagramCtaLabel">ÚNETE EN INSTAGRAM</span><b>↗</b>
+            </a>
+          </div>
+        </div>
+        <div class="hero-meta"><span>DESLIZA</span><span class="scroll-line"></span></div>
+      </div>
+    </section>
+
+    <section id="tickerSection" class="ticker" aria-label="Highlights"><div class="ticker-track" id="tickerTrack"></div></section>
+
+    <div id="dynamicSections">
+      <section id="liveSection" class="section page-section" data-section="live">
+        <div class="section-head reveal column-head">
+          <div class="section-badge"><span id="liveTag">01 / EN VIVO</span></div>
+          <h2 class="display-title section-display"><span id="liveTitle1" class="white">STREAM EN</span><span id="liveTitle2">KICK.</span></h2>
+        </div>
+        <div class="live-grid">
+          <div class="reveal"><p class="section-copy" id="liveDescription"></p><a id="liveKickBtn" class="btn btn-kick" href="#" target="_blank" rel="noopener noreferrer">ENTRAR AL STREAM ↗</a></div>
+          <div id="liveCard" class="live-card reveal"><div class="live-card-top"><div id="livePhoto" class="live-photo hidden"></div><div class="live-channel"><div class="live-network-row"><span class="kick-wordmark">KICK</span><strong id="kickHandle">@yourkick</strong></div><small>CANAL OFICIAL</small><span id="liveBadge" class="status-badge"><i class="live-dot"></i><span>LIVE</span></span></div></div><div class="live-card-divider"></div><div class="live-stats"><div><b id="stat1Value">IRL</b><small id="stat1Label">DIRECTOS</small></div><div><b id="stat2Value">SEMANAL</b><small id="stat2Label">EVENTOS</small></div><div><b id="stat3Value">CLIPS</b><small id="stat3Label">MOMENTOS</small></div></div></div>
+        </div>
+      </section>
+
+      <section id="socials" class="section page-section socials-section" data-section="socials">
+        <div class="section-shell dual-shell">
+          <div class="section-copy-col reveal">
+            <div class="section-badge"><span id="socialsTag">05 / SOCIAL</span></div>
+            <h2 class="display-title section-display"><span id="socialsTitle1" class="white">SIGUE LA</span><span id="socialsTitle2">COMUNIDAD.</span></h2>
+            <p class="section-copy" id="socialsDescription"></p>
+            <a id="socialsMainCta" class="btn btn-outline" href="#" target="_blank" rel="noopener noreferrer">@TUUSUARIO | SEGUIR <b>IR</b></a>
+          </div>
+          <div class="social-carousel-shell">
+            <button id="prevSocial" class="social-carousel-btn prev" type="button" aria-label="Red anterior">←</button>
+            <div id="socialGrid" class="social-grid social-grid-showcase"></div>
+            <button id="nextSocial" class="social-carousel-btn next" type="button" aria-label="Red siguiente">→</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="culture" class="section page-section culture-section" data-section="culture">
+        <div class="section-shell dual-shell">
+          <div class="section-copy-col reveal">
+            <div class="section-badge"><span id="cultureTag">06 / INSTAGRAM</span></div>
+            <h2 class="display-title section-display"><span id="cultureTitle1" class="white">SIGUE LA</span><span id="cultureTitle2">CULTURA.</span></h2>
+            <p class="section-copy" id="cultureDescription"></p>
+            <a id="cultureMainCta" class="btn btn-outline" href="#" target="_blank" rel="noopener noreferrer">@TUINSTAGRAM | SEGUIR <b>IR</b></a>
+          </div>
+          <div class="culture-carousel-shell">
+            <button id="prevCulture" class="rail-arrow rail-arrow-left culture-arrow" type="button" aria-label="Anterior en Cultura">←</button>
+            <div class="culture-gallery" id="cultureGallery"></div>
+            <button id="nextCulture" class="rail-arrow rail-arrow-right culture-arrow" type="button" aria-label="Siguiente en Cultura">→</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="featured" class="section page-section featured-section" data-section="featured">
+        <div class="section-head reveal">
+          <div>
+            <div class="section-badge"><span id="featuredTag">JUST DROPPED</span></div>
+            <h2 class="display-title section-display"><span id="featuredTitle1" class="white">QUÉ ESTÁ</span><span id="featuredTitle2">PASANDO.</span></h2>
+          </div>
+          <div class="carousel-controls"><button id="prevFeatured" aria-label="Anterior">←</button><button id="nextFeatured" aria-label="Siguiente">→</button></div>
+        </div>
+        <div id="featuredViewport" class="carousel-viewport reveal"><div id="featuredTrack" class="carousel-track"></div></div>
+      </section>
+
+      <section id="clips" class="section page-section" data-section="clips">
+        <div class="section-head reveal clips-head">
+          <div><div class="section-badge"><span id="clipsTag">MEJORES MOMENTOS</span></div>
+          <h2 class="display-title section-display"><span id="clipsTitle1" class="white">MIRA LOS</span><span id="clipsTitle2">CLIPS.</span></h2></div>
+          <div class="carousel-controls clips-controls"><button id="prevClip" aria-label="Clip anterior">←</button><button id="nextClip" aria-label="Clip siguiente">→</button></div>
+        </div>
+        <div class="clips-carousel"><div id="clipsGrid" class="clips-grid"></div></div>
+      </section>
+
+      <section id="upcoming" class="section page-section upcoming-section" data-section="upcoming">
+        <div class="section-head reveal column-head">
+          <div class="section-badge"><span id="upcomingTag">PRÓXIMO STREAM</span></div>
+          <h2 class="display-title section-display"><span id="upcomingTitle1" class="white">NO TE LO</span><span id="upcomingTitle2">PIERDAS.</span></h2>
+        </div>
+        <div id="upcomingCard" class="upcoming-card reveal">
+          <div id="nextStreamImageBox" class="upcoming-portrait"><div id="nextStreamImage" class="upcoming-image"></div><div class="upcoming-photo-copy"><p class="mini-label">PRÓXIMA TRANSMISIÓN</p><h2 id="nextStreamTitle" class="display-title small-display">IRL NIGHT STREAM.</h2><p id="nextStreamText" class="section-copy"></p></div></div>
+          <div class="countdown" id="countdown"><div><b id="cdDays">00</b><small>DÍAS</small></div><div><b id="cdHours">00</b><small>HRS</small></div><div><b id="cdMinutes">00</b><small>MIN</small></div><div><b id="cdSeconds">00</b><small>SEG</small></div></div>
+        </div>
+      </section>
+
+      <section id="announcements" class="section page-section announcement-section" data-section="announcements">
+        <div class="announcement-shell reveal">
+          <div class="section-badge notice-badge"><span id="announcementKicker">07 / AVISOS</span></div>
+          <h2 class="display-title section-display notice-display"><span id="announcementTitle1" class="white">LO ÚLTIMO</span><span id="announcementTitle2">DEL STREAM.</span></h2>
+          <div class="notices-carousel-wrap">
+            <button id="prevNotice" class="rail-arrow rail-arrow-left notice-arrow" type="button" aria-label="Aviso anterior">←</button>
+            <div id="noticesTrack" class="notices-track" aria-label="Carrusel de avisos"></div>
+            <button id="nextNotice" class="rail-arrow rail-arrow-right notice-arrow" type="button" aria-label="Aviso siguiente">→</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="section page-section" data-section="about">
+        <div class="section-head reveal column-head">
+          <div class="section-badge"><span id="aboutTag">SOBRE MÍ</span></div>
+          <h2 class="display-title section-display"><span id="aboutTitle1" class="white">HECHO PARA</span><span id="aboutTitle2">EL STREAM.</span></h2>
+        </div>
+        <div class="about-grid"><h2 id="aboutTitle" class="display-title reveal small-display"></h2><p id="aboutText" class="section-copy reveal"></p></div>
+      </section>
+
+      <section id="customSectionContainer" class="section page-section custom-section-container hidden-section" data-section="custom"><div id="customSections"></div></section>
+    </div>
+
+    <section class="final-cta"><div class="final-glow"></div><div class="reveal"><p class="mini-label" id="finalKicker">NO TE PIERDAS EL PRÓXIMO</p><h2 id="finalTitle">NOS VEMOS EN <span>DIRECTO.</span></h2><a id="finalKickBtn" class="btn btn-kick" href="#" target="_blank" rel="noopener noreferrer">ABRIR KICK ↗</a></div></section>
+  </main>
+
+  <footer class="footer"><div class="brand footer-brand"><span id="footerBrandBase">CSM</span><span id="footerBrandAccent">NICO</span></div><div id="footerLinks" class="footer-links"></div><div class="footer-bottom"><span>© <span id="year"></span> <span id="copyrightBrand">CSMNICO</span></span><span>CENTRO DEL STREAMER</span></div></footer>
+  <button class="floating-button" id="floatingButton" aria-label="Ir a redes"><span class="floating-x">×</span></button>
+
+  <script src="local-db.js?v=5.8.8"></script>
+  <script src="config.js?v=5.8.8"></script>
+  <script src="default-content.js?v=5.8.8"></script>
+  <script src="cloud.js?v=5.8.8"></script>
+  <script src="app.js?v=5.8.8"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+STREAMER HUB - CHECKLIST ANTES DE HACERLO PÚBLICO
+
+[ ] supabase-secure-setup.sql ejecutado sin errores
+[ ] usuario creado en Supabase Authentication
+[ ] usuario agregado a public.admins
+[ ] signup público desactivado (recomendado)
+[ ] config.js contiene SOLO Project URL + anon public key
+[ ] service_role NO aparece en ningún archivo
+[ ] login de admin probado
+[ ] primera configuración local migrada y publicada a Supabase
+[ ] fotos visibles desde otro dispositivo
+[ ] cambio publicado desde celular visible en PC
+[ ] admin.html bloquea usuarios no autorizados
+[ ] repositorio GitHub creado
+[ ] GitHub Pages activado desde main / root
+[ ] sitio público probado en iPhone / Android / PC / tablet
+[ ] copia ZIP final guardada como respaldo

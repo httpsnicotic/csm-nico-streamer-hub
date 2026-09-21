@@ -1,0 +1,7 @@
+V5.5
+- Tarjeta Kick: foto más grande, badge KICK pequeño en blanco y pulso verde fuerte cuando LIVE.
+- OFFLINE elimina el pulso automáticamente.
+- Sigue la cultura: selector de plataforma por tarjeta.
+- Icono de red arriba, nombre de red abajo y botón IR.
+- Plataformas: Instagram, TikTok, Kick, YouTube, X, Discord, Twitch y personalizada.
+- Mantiene todos los módulos y funciones anteriores.
