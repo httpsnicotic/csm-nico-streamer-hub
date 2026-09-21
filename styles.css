@@ -657,3 +657,28 @@ body.reduce-motion .ticker-track{animation:tickerVip 28s linear infinite!importa
   .clip-card:nth-child(3n+2){transform:none}
   .notice-carousel-card:nth-child(even){transform:none}
 }
+
+
+/* =============================================================
+   V5.8.9 · FAST MOBILE / CLEAN 4K UPCOMING / COMPACT SECTIONS
+   ============================================================= */
+.upcoming-portrait::after{background:transparent!important}
+.upcoming-image{filter:none!important;opacity:1!important;mix-blend-mode:normal!important}
+.upcoming-portrait.no-image::after{background:transparent!important}
+.section{padding-top:78px!important;padding-bottom:78px!important}
+.section-head{margin-bottom:30px!important}
+.section-kicker{margin-bottom:24px!important}
+.upcoming-section{padding-bottom:42px!important}
+.announcement-section{padding-top:42px!important}
+@media(max-width:700px){
+  .section{padding-top:48px!important;padding-bottom:48px!important}
+  .section-head{margin-bottom:22px!important}
+  .section-kicker{margin-bottom:18px!important}
+  .upcoming-section{padding-bottom:24px!important}
+  .announcement-section{padding-top:24px!important}
+  .page-noise,.cursor-glow{display:none!important}
+  .site-header,.rail-arrow,.social-carousel-btn{backdrop-filter:none!important}
+  .reveal{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}
+}
+body.preview-fast .page-noise,body.preview-fast .cursor-glow{display:none!important}
+body.preview-fast .particle{animation-duration:16s!important}

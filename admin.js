@@ -192,14 +192,22 @@ function installPreviewSync(){
 async function writePreview(includeFull=false){
   const f1=document.getElementById('previewFrame'),f2=document.getElementById('fullPreviewFrame');
   const p1=getFrameScroll(f1),target=PANEL_TO_PREVIEW[activePanelId];
-  try{await window.LocalConfigDB.set(PREVIEW_KEY,draft);}catch(e){status("No se pudo preparar la vista previa: "+(e.message||e),false);return;}
+  /* Preview rápido: los iframes son del mismo origen, así que leen el borrador
+     directamente de la ventana admin. IndexedDB queda solo como respaldo y no
+     bloquea el botón. */
+  window.__STREAMER_PREVIEW_DRAFT__=clone(draft);
+  setTimeout(()=>window.LocalConfigDB?.set(PREVIEW_KEY,draft).catch(e=>console.warn('Preview backup failed',e)),700);
   previewSignature=previewToken();
-  const u=`index.html?preview=1&t=${Date.now()}`;
+  const u='index.html?preview=1&fast=1';
   const reload=(frame,pos)=>{
     if(!frame)return;
     frame.dataset.syncedTarget='';
     frame.addEventListener('load',()=>requestAnimationFrame(()=>{if(target)scrollPreviewFrame(frame.id,target,true);else try{frame.contentWindow.scrollTo(pos.x,pos.y)}catch{}}),{once:true});
-    frame.src=u;
+    try{
+      const current=new URL(frame.contentWindow.location.href);
+      if(current.searchParams.get('preview')==='1') frame.contentWindow.location.reload();
+      else frame.src=u;
+    }catch{ frame.src=u; }
   };
   reload(f1,p1);
   if(includeFull)reload(f2,getFrameScroll(f2));
@@ -271,9 +279,10 @@ async function boot(){
     dirty=true;draftRevision++;previewSignature="";updateActionState();
     status("Configuración local recuperada. Revísala en VISTA PREVIA y publícala una vez para pasarla a la nube ✓");
   }else markClean();
-  try{await window.LocalConfigDB.set(PREVIEW_KEY,draft);}catch(e){console.warn("Preview DB init failed",e)}
+  window.__STREAMER_PREVIEW_DRAFT__=clone(draft);
+  setTimeout(()=>window.LocalConfigDB?.set(PREVIEW_KEY,draft).catch(e=>console.warn("Preview DB init failed",e)),900);
   installPreviewSync();
-  document.getElementById('previewFrame').src=`index.html?preview=1&t=${Date.now()}`;
+  document.getElementById('previewFrame').src='index.html?preview=1&fast=1';
   await loadHistory();
 }
 boot().catch(e=>{console.error(e);const p=document.createElement("pre");p.style.padding="20px";p.style.color="#ff6589";p.textContent=e.message;document.body.appendChild(p)});

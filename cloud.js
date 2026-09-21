@@ -130,10 +130,21 @@
     enabled, ready, getClient, currentUser, isAdmin, isEmptyConfig,
 
     async load(){
-      const sb=await requireClient();
-      const {data,error}=await sb.from("site_config").select("config").eq("id",1).single();
-      if(error) throw error;
-      return isEmptyConfig(data?.config) ? null : data.config;
+      if(!configured()) return null;
+      /* Lectura pública ultraligera: no necesita descargar supabase-js.
+         El SDK completo queda reservado para login/publicación del admin. */
+      const endpoint=`${cfg.url.replace(/\/$/,"")}/rest/v1/site_config?id=eq.1&select=config`;
+      let response;
+      try{
+        response=await fetch(endpoint,{
+          headers:{ apikey:cfg.anonKey, Accept:"application/json" },
+          cache:"no-store"
+        });
+      }catch(e){ throw new Error(`No se pudo leer la configuración pública: ${e?.message||"error de red"}`); }
+      if(!response.ok) throw new Error(`Configuración pública: HTTP ${response.status}`);
+      const rows=await response.json();
+      const value=Array.isArray(rows)?rows[0]?.config:null;
+      return isEmptyConfig(value) ? null : value;
     },
 
     async signIn(email,password){

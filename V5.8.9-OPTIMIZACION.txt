@@ -1,0 +1,9 @@
+V5.8.9 PRODUCTION FAST
+- Preview móvil más grande.
+- Preview rápido usando memoria same-origin antes de IndexedDB.
+- Menos partículas y sin reveal pesado en móvil/preview.
+- Cache local de configuración publicada con actualización cloud en segundo plano.
+- Preconnect a Supabase.
+- Próximo stream sin overlay ni tinte sobre la imagen.
+- Menos espacio vertical entre secciones.
+- Menos efectos costosos en móvil.

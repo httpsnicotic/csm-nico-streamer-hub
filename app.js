@@ -312,7 +312,7 @@ function renderParticles(c) {
   if (!c.effects?.particles) return;
   const previewMode = new URLSearchParams(location.search).get("preview") === "1";
   const mobile = matchMedia("(max-width: 700px)").matches;
-  const count = mobile ? 16 : (previewMode ? 20 : 28);
+  const count = previewMode ? (mobile ? 4 : 8) : (mobile ? 8 : 18);
   const frag=document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const s = document.createElement("span");
@@ -352,6 +352,26 @@ function renderNav(c) {
   });
 }
 
+let lazyBgObserver = null;
+function setBackgroundImage(el, value, critical = false) {
+  if (!el) return;
+  const safe = safeImage(value);
+  if (!safe) { el.style.backgroundImage = ""; return; }
+  const css = `url("${safe.replaceAll('"','%22')}")`;
+  if (critical || !("IntersectionObserver" in window)) { el.style.backgroundImage = css; return; }
+  if (!lazyBgObserver) lazyBgObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const node = entry.target;
+      if (node.dataset.lazyBg) node.style.backgroundImage = node.dataset.lazyBg;
+      delete node.dataset.lazyBg;
+      lazyBgObserver.unobserve(node);
+    });
+  }, { rootMargin:"700px 0px" });
+  el.dataset.lazyBg = css;
+  lazyBgObserver.observe(el);
+}
+
 function renderSocials(c) {
   const grid = document.getElementById("socialGrid");
   const footer = document.getElementById("footerLinks");
@@ -370,7 +390,7 @@ function renderSocials(c) {
       card.classList.add("has-image");
       const media = document.createElement("div");
       media.className = "social-card-media";
-      media.style.backgroundImage = `url("${socialImage.replaceAll('"','%22')}")`;
+      setBackgroundImage(media, socialImage);
       card.appendChild(media);
     }
 
@@ -408,8 +428,7 @@ function renderSocials(c) {
 function makeBackground(url, className = "media-bg") {
   const div = document.createElement("div");
   div.className = className;
-  const safe = safeImage(url);
-  if (safe) div.style.backgroundImage = `url("${safe.replaceAll('"','%22')}")`;
+  setBackgroundImage(div, url);
   return div;
 }
 
@@ -520,6 +539,8 @@ function renderFeatured(c) {
       const img = document.createElement("img");
       img.className = "feature-badge-image";
       img.src = badgeImage;
+      img.loading = "lazy";
+      img.decoding = "async";
       img.alt = "";
       a.appendChild(img);
     }
@@ -641,6 +662,7 @@ function renderAnnouncements(c) {
       img.src = image;
       img.alt = notice.title || "Aviso";
       img.loading = "lazy";
+      img.decoding = "async";
       media.appendChild(img);
       card.appendChild(media);
 
@@ -764,7 +786,9 @@ function setupCarousel(c) {
 
 function setupReveal(c) {
   const nodes = document.querySelectorAll(".reveal");
-  if (c.effects?.reveal === false) {
+  const params = new URLSearchParams(location.search);
+  const instant = params.get("preview") === "1" || matchMedia("(max-width:700px)").matches || c.effects?.reveal === false;
+  if (instant) {
     nodes.forEach(el => el.classList.add("in"));
     return;
   }
@@ -896,21 +920,46 @@ function setupAmbient(c) {
 async function loadConfig() {
   const params = new URLSearchParams(location.search);
   if (params.get("preview") === "1") {
+    document.getElementById("previewRibbon").classList.remove("hidden");
+    try {
+      const memoryDraft = window.parent && window.parent !== window ? window.parent.__STREAMER_PREVIEW_DRAFT__ : null;
+      if (memoryDraft) return normalizeConfig(memoryDraft);
+    } catch {}
     try {
       let draft = await window.LocalConfigDB?.get(PREVIEW_KEY);
       if (!draft) draft = await window.LocalConfigDB?.migrateFromLocalStorage(PREVIEW_KEY);
-      if (draft) {
-        document.getElementById("previewRibbon").classList.remove("hidden");
-        return normalizeConfig(draft);
-      }
+      if (draft) return normalizeConfig(draft);
     } catch (err) { console.warn("Preview local DB unavailable:", err); }
   }
 
   if (window.CloudConfig?.enabled()) {
+    let cached = null;
+    try { cached = await window.LocalConfigDB?.get(LIVE_KEY); } catch {}
+    if (cached) {
+      Promise.resolve().then(async () => {
+        try {
+          const cloud = await window.CloudConfig.load();
+          if (!cloud) return;
+          const a = JSON.stringify(cached), b = JSON.stringify(cloud);
+          if (a !== b) {
+            await window.LocalConfigDB?.set(LIVE_KEY, cloud);
+            const marker = 'streamerHubCloudRefresh_v589';
+            const sig = b.length + ':' + b.slice(0,120);
+            if (sessionStorage.getItem(marker) !== sig) {
+              sessionStorage.setItem(marker, sig);
+              setTimeout(() => location.reload(), 120);
+            }
+          }
+        } catch (err) { console.warn("Cloud background refresh unavailable:", err?.message || err); }
+      });
+      return normalizeConfig(cached);
+    }
     try {
-      await window.CloudConfig.ready();
       const cloud = await window.CloudConfig.load();
-      if (cloud) return normalizeConfig(cloud);
+      if (cloud) {
+        window.LocalConfigDB?.set(LIVE_KEY, cloud).catch(() => {});
+        return normalizeConfig(cloud);
+      }
     } catch (err) {
       console.warn("Cloud config unavailable:", err.message);
     }
@@ -926,6 +975,8 @@ async function loadConfig() {
 }
 
 async function init() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("preview") === "1" && params.get("fast") === "1") document.body.classList.add("preview-fast");
   const c = await loadConfig();
   applyTheme(c);
   renderParticles(c);
@@ -993,7 +1044,7 @@ async function init() {
   const livePhoto = document.getElementById("livePhoto");
   const livePhotoUrl = safeImage(c.liveImage);
   if (livePhoto) {
-    livePhoto.style.backgroundImage = livePhotoUrl ? `url("${livePhotoUrl.replaceAll('"','%22')}")` : "";
+    setBackgroundImage(livePhoto, livePhotoUrl);
     livePhoto.classList.toggle("hidden", !livePhotoUrl);
   }
   (c.liveStats || []).slice(0,3).forEach((s,i) => {
@@ -1014,7 +1065,7 @@ async function init() {
   const upcomingImageBox = document.getElementById("nextStreamImageBox");
   const upcomingImage = document.getElementById("nextStreamImage");
   const upcomingCard = document.getElementById("upcomingCard");
-  if (upcomingImage) upcomingImage.style.backgroundImage = upcomingImageUrl ? `url("${upcomingImageUrl.replaceAll('"','%22')}")` : "";
+  if (upcomingImage) setBackgroundImage(upcomingImage, upcomingImageUrl);
   upcomingImageBox?.classList.toggle("no-image", !upcomingImageUrl);
   upcomingCard?.classList.toggle("with-image", !!upcomingImageUrl);
 
