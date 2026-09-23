@@ -1,0 +1,7 @@
+V5.8.15
+- Corrige el bug donde el preview se quedaba apuntando al original al editar una copia de sección.
+- Mantiene activa la instancia/copia seleccionada al desplazarse por el panel admin.
+- Las copias de Anuncio y Carrusel ya no rellenan campos vacíos con contenido viejo/default en preview.
+- En Secciones, los controles visuales siguen apareciendo solo para Carrusel y sus copias.
+- Agrega controles del Carrusel: luz de fondo, intensidad de fondo, neón blanco, neón color, brillo de título, borde de fotos y fuerza de borde.
+- Hace el panel de Secciones más compacto para móvil.

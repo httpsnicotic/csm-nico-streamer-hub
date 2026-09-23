@@ -145,3 +145,18 @@ button{touch-action:manipulation}
   .section-row [data-up],.section-row [data-down]{font-size:13px!important}
   .section-style-grid{grid-template-columns:1fr!important}
 }
+
+/* V5.8.15 - panel Secciones más compacto y controles del carrusel escondidos */
+#sectionEditor.section-editor{gap:6px!important}
+#sectionEditor .section-row{padding:7px 9px!important;gap:6px!important;border-radius:11px!important;grid-template-columns:22px minmax(0,1fr) 34px 34px 34px 34px!important}
+#sectionEditor .section-row:not(.section-row-copy){grid-template-columns:22px minmax(0,1fr) 34px 34px 34px!important}
+#sectionEditor .section-name-input{height:32px!important;min-height:32px!important;font-size:9px!important;padding:6px 9px!important}
+#sectionEditor .icon-btn{width:34px!important;height:34px!important;min-height:34px!important;border-radius:9px!important;font-size:14px!important}
+#sectionEditor .section-style-row{margin-top:0!important;border-top:1px solid rgba(255,255,255,.05)!important}
+#sectionEditor .section-style-row summary{height:26px!important;font-size:8px!important;color:#c9c0cc!important}
+#sectionEditor .section-style-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;padding-bottom:2px!important}
+#sectionEditor .section-style-grid label{font-size:7px!important;gap:3px!important}
+#sectionEditor .section-style-grid input[type="color"]{height:27px!important;min-height:27px!important;padding:3px!important}
+#sectionEditor .section-style-grid input[type="range"]{height:27px!important;min-height:27px!important}
+@media(max-width:760px){#sectionEditor .section-row,#sectionEditor .section-row:not(.section-row-copy){grid-template-columns:20px minmax(0,1fr) 32px 32px 32px!important;padding:6px!important}#sectionEditor .section-row.section-row-copy{grid-template-columns:20px minmax(0,1fr) 32px 32px 32px 32px!important}#sectionEditor .section-style-grid{grid-template-columns:1fr 1fr!important}#sectionEditor .icon-btn{width:32px!important;height:32px!important;min-height:32px!important}}
+@media(max-width:420px){#sectionEditor .section-row,#sectionEditor .section-row:not(.section-row-copy),#sectionEditor .section-row.section-row-copy{grid-template-columns:20px minmax(0,1fr) 32px 32px!important}#sectionEditor .section-style-grid{grid-template-columns:1fr!important}}

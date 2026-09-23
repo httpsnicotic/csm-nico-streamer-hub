@@ -20,7 +20,7 @@ function normalizeSectionItems(c){
     if(seen.has(id))id=`${id}_${i+1}`;
     seen.add(id);
     const style=x.style&&typeof x.style==='object'?{...x.style}:{};
-    return {id,type:x.type,name:String(x.name||SECTION_DEFAULT_NAMES[x.type]||x.type),enabled:x.enabled!==false,data:x.data&&typeof x.data==='object'?clone(x.data):undefined,style:{titleWhite:style.titleWhite||'',titleNeon:style.titleNeon||'',titleMode:style.titleMode||'pink',cardBorder:style.cardBorder||'',cardGlow:style.cardGlow??''}};
+    return {id,type:x.type,name:String(x.name||SECTION_DEFAULT_NAMES[x.type]||x.type),enabled:x.enabled!==false,data:x.data&&typeof x.data==='object'?clone(x.data):undefined,style:{titleWhite:style.titleWhite||'',titleNeon:style.titleNeon||'',titleMode:style.titleMode||'pink',cardBorder:style.cardBorder||'',cardGlow:style.cardGlow??'',bgGlow:style.bgGlow||'',bgGlowStrength:style.bgGlowStrength??'',titleWhiteGlow:style.titleWhiteGlow??'',titleNeonGlow:style.titleNeonGlow??'',titleBrightness:style.titleBrightness??''}};
   });
   SECTION_TYPES.forEach(type=>{if(!items.some(x=>x.type===type))items.push({id:type,type,name:SECTION_DEFAULT_NAMES[type]||type,enabled:c.sections?.[type]!==false})});
   c.sectionItems=items;
@@ -201,10 +201,15 @@ function renderSections(){
     const titleWhite=/^#[0-9a-fA-F]{6}$/.test(item.style.titleWhite||'')?item.style.titleWhite:(draft.theme?.sectionTitleWhite||'#ffffff');
     const titleNeon=/^#[0-9a-fA-F]{6}$/.test(item.style.titleNeon||'')?item.style.titleNeon:(draft.theme?.sectionTitleNeon||'#ff4fc7');
     const cardBorder=/^#[0-9a-fA-F]{6}$/.test(item.style.cardBorder||'')?item.style.cardBorder:(item.style.titleNeon||draft.theme?.primary||'#ff2db7');
+    const bgGlow=/^#[0-9a-fA-F]{6}$/.test(item.style.bgGlow||'')?item.style.bgGlow:titleNeon;
     const cardGlow=Number.isFinite(Number(item.style.cardGlow))?Number(item.style.cardGlow):65;
+    const bgGlowStrength=Number.isFinite(Number(item.style.bgGlowStrength))?Number(item.style.bgGlowStrength):55;
+    const titleWhiteGlow=Number.isFinite(Number(item.style.titleWhiteGlow))?Number(item.style.titleWhiteGlow):34;
+    const titleNeonGlow=Number.isFinite(Number(item.style.titleNeonGlow))?Number(item.style.titleNeonGlow):76;
+    const titleBrightness=Number.isFinite(Number(item.style.titleBrightness))?Number(item.style.titleBrightness):100;
     const r=document.createElement("div");r.className=`section-row ${isCarousel?'section-row-styleable':'section-row-compact'} ${isCopy?'section-row-copy':''}`;
     const deleteBtn=isCopy?`<button class="icon-btn danger" data-delete-section="${i}" title="Eliminar solo esta copia" aria-label="Eliminar copia">×</button>`:'';
-    const styleControls=isCarousel?`<details class="section-style-row"><summary>Colores del carrusel</summary><div class="section-style-grid"><label>Blanco<input type="color" value="${esc(titleWhite)}" data-section-style="${esc(item.id)}" data-style-field="titleWhite"></label><label>Neón título<input type="color" value="${esc(titleNeon)}" data-section-style="${esc(item.id)}" data-style-field="titleNeon"></label><label>Borde fotos<input type="color" value="${esc(cardBorder)}" data-section-style="${esc(item.id)}" data-style-field="cardBorder"></label><label>Fuerza borde<input type="range" min="0" max="100" step="1" value="${esc(cardGlow)}" data-section-style="${esc(item.id)}" data-style-field="cardGlow"></label></div></details>`:'';
+    const styleControls=isCarousel?`<details class="section-style-row"><summary>Control visual del carrusel</summary><div class="section-style-grid"><label>Blanco<input type="color" value="${esc(titleWhite)}" data-section-style="${esc(item.id)}" data-style-field="titleWhite"></label><label>Neón título<input type="color" value="${esc(titleNeon)}" data-section-style="${esc(item.id)}" data-style-field="titleNeon"></label><label>Luz fondo<input type="color" value="${esc(bgGlow)}" data-section-style="${esc(item.id)}" data-style-field="bgGlow"></label><label>Borde fotos<input type="color" value="${esc(cardBorder)}" data-section-style="${esc(item.id)}" data-style-field="cardBorder"></label><label>Fuerza borde<input type="range" min="0" max="100" step="1" value="${esc(cardGlow)}" data-section-style="${esc(item.id)}" data-style-field="cardGlow"></label><label>Fondo luz<input type="range" min="0" max="100" step="1" value="${esc(bgGlowStrength)}" data-section-style="${esc(item.id)}" data-style-field="bgGlowStrength"></label><label>Neón blanco<input type="range" min="0" max="100" step="1" value="${esc(titleWhiteGlow)}" data-section-style="${esc(item.id)}" data-style-field="titleWhiteGlow"></label><label>Neón color<input type="range" min="0" max="100" step="1" value="${esc(titleNeonGlow)}" data-section-style="${esc(item.id)}" data-style-field="titleNeonGlow"></label><label>Brillo título<input type="range" min="70" max="160" step="1" value="${esc(titleBrightness)}" data-section-style="${esc(item.id)}" data-style-field="titleBrightness"></label></div></details>`:'';
     r.innerHTML=`<input type="checkbox" ${item.enabled!==false?"checked":""} data-section-toggle="${esc(item.id)}" aria-label="Mostrar ${esc(item.name)}"><input class="section-name-input" value="${esc(item.name)}" data-section-name="${esc(item.id)}" aria-label="Nombre de la sección"><button class="icon-btn section-duplicate" data-duplicate-section="${i}" title="Duplicar sección" aria-label="Duplicar sección">⧉</button>${deleteBtn}<button class="icon-btn" data-up="${i}" title="Subir">↑</button><button class="icon-btn" data-down="${i}" title="Bajar">↓</button>${styleControls}`;
     w.appendChild(r);
   });
@@ -299,7 +304,20 @@ function currentAdminPanel(){
 }
 function schedulePreviewSync(){
   if(syncRAF)return;
-  syncRAF=requestAnimationFrame(()=>{syncRAF=0;const panel=currentAdminPanel();if(panel&&panel.id!==lastSyncedPanel){lastSyncedPanel=panel.id;activeSectionItemId='';const match=draft?.sectionItems?.find(x=>SECTION_PANEL_IDS[x.type]===panel.id);activeAdminNavKey=match?`section-${match.id}`:`core-${panel.id}`;syncPreviewToPanel(panel.id,false)}});
+  syncRAF=requestAnimationFrame(()=>{
+    syncRAF=0;
+    const panel=currentAdminPanel();
+    if(panel&&panel.id!==lastSyncedPanel){
+      lastSyncedPanel=panel.id;
+      const current=activeSectionItemId&&draft?.sectionItems?.find(x=>x.id===activeSectionItemId);
+      if(!(current&&SECTION_PANEL_IDS[current.type]===panel.id)){
+        const match=draft?.sectionItems?.find(x=>SECTION_PANEL_IDS[x.type]===panel.id);
+        activeSectionItemId=match?.id||'';
+      }
+      activeAdminNavKey=activeSectionItemId?`section-${activeSectionItemId}`:`core-${panel.id}`;
+      syncPreviewToPanel(panel.id,false);
+    }
+  });
 }
 function setMobileEditing(on){if(window.innerWidth<=760){document.body.classList.toggle('mobile-editing',!!on);requestAnimationFrame(schedulePreviewSync)}}
 function installPreviewSync(){
