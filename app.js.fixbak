@@ -16,8 +16,7 @@ function normalizeSectionItems(c) {
     let id = String(x.id || `${x.type}_${i+1}`);
     if (seen.has(id)) id = `${id}_${i+1}`;
     seen.add(id);
-    const style=x.style&&typeof x.style==='object'?{...x.style}:{};
-    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false, data:x.data&&typeof x.data==='object'?clone(x.data):undefined, style:{titleWhite:style.titleWhite||'',titleNeon:style.titleNeon||'',titleMode:style.titleMode||'pink'} };
+    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false, data:x.data&&typeof x.data==='object'?x.data:undefined, style:x.style&&typeof x.style==='object'?x.style:{titleMode:'pink',borderColor:'',glow:70} };
   });
   SECTION_TYPES.forEach(type => { if (!items.some(x => x.type === type)) items.push({ id:type, type, name:SECTION_DEFAULT_NAMES[type] || type, enabled:c.sections?.[type] !== false }); });
   c.sectionItems = items;
@@ -796,15 +795,12 @@ function setSectionHeader(prefix, obj = {}) {
   setText(`${prefix}Title2`, obj.title2 || "");
 }
 
-function scopedEl(root, id) {
-  try { return root.querySelector(`#${CSS.escape(id)}, [id^="${CSS.escape(id)}--"]`); } catch { return root.querySelector(`[id^="${id}"]`); }
-}
 function setScopedText(root, idPrefix, value) {
-  const el = scopedEl(root, idPrefix);
+  const el = root.querySelector(`[id^="${idPrefix}"]`);
   if (el) el.textContent = value ?? "";
 }
 function setScopedOptionalText(root, idPrefix, value) {
-  const el = scopedEl(root, idPrefix);
+  const el = root.querySelector(`[id^="${idPrefix}"]`);
   if (el) {
     const txt = cleanText(value);
     el.textContent = txt;
@@ -813,41 +809,21 @@ function setScopedOptionalText(root, idPrefix, value) {
 }
 function getSectionStyle(item = {}) {
   const st = item.style || {};
-  const white = safeColor(st.titleWhite || "", getComputedStyle(document.documentElement).getPropertyValue('--section-white').trim() || "#ffffff");
-  const neon = safeColor(st.titleNeon || "", getComputedStyle(document.documentElement).getPropertyValue('--section-neon').trim() || "#ff4fc7");
-  return { white, neon };
+  const border = safeColor(st.borderColor || "", "#ff2db7");
+  const glow = Math.max(0, Math.min(100, Number(st.glow ?? 70)));
+  return { titleMode: st.titleMode === "white" ? "white" : "pink", border, glow };
 }
 function applySectionStyle(root,item){
   const st=getSectionStyle(item);
-  root.style.setProperty('--section-title-white',st.white);
-  root.style.setProperty('--section-title-neon',st.neon);
-  root.style.setProperty('--section-card-border',st.neon);
+  root.dataset.titleMode=st.titleMode;
+  root.style.setProperty('--section-card-border',st.border);
+  root.style.setProperty('--section-card-glow',`${st.glow}%`);
 }
 function mergedConfigForItem(c,item){
   if(!item?.data) return c;
   const d=item.data;
   const out={...c,...d,sectionHeaders:{...(c.sectionHeaders||{}),...(d.sectionHeaders||{})}};
   return out;
-}
-
-function renderLiveInto(root,cfg){
-  const h=cfg.sectionHeaders?.live||{};setScopedText(root,'liveTag',h.tag||'');setScopedText(root,'liveTitle1',h.title1||'');setScopedText(root,'liveTitle2',h.title2||'');setScopedOptionalText(root,'liveDescription',cfg.liveDescription);
-  const kick=(cfg.socials||[]).find(s=>s.id==='kick')||{};const liveKick=scopedEl(root,'liveKickBtn');if(liveKick)liveKick.href=safeLink(kick.url);
-  const handle=scopedEl(root,'kickHandle');if(handle)handle.textContent=`@${String(cfg.kickHandle||kick.handle||'yourkick').replace(/^@/,'')}`;
-  const badge=scopedEl(root,'liveBadge');const badgeText=badge?.querySelector('span');if(badgeText)badgeText.textContent=cfg.isLive?'LIVE':'OFFLINE';else if(badge)badge.textContent=cfg.isLive?'LIVE':'OFFLINE';badge?.classList.toggle('offline',!cfg.isLive);
-  const card=scopedEl(root,'liveCard');card?.classList.toggle('live-pulse',!!cfg.isLive);
-  const photo=scopedEl(root,'livePhoto');const url=safeImage(cfg.liveImage);if(photo){setBackgroundImage(photo,url);photo.classList.toggle('hidden',!url)}
-  (cfg.liveStats||[]).slice(0,3).forEach((s,i)=>{setScopedText(root,`stat${i+1}Value`,s.value);setScopedText(root,`stat${i+1}Label`,s.label)});
-}
-function renderSocialsInto(root,cfg){
-  const h=cfg.sectionHeaders?.socials||{};setScopedText(root,'socialsTag',h.tag||'');setScopedText(root,'socialsTitle1',h.title1||'');setScopedText(root,'socialsTitle2',h.title2||'');setScopedOptionalText(root,'socialsDescription',cfg.socialsDescription);
-  const cta=scopedEl(root,'socialsMainCta');if(cta){const obj=cfg.socialsMainCta||{};cta.href=safeLink(obj.url);cta.innerHTML=`${escapeHtml(obj.label||'@TUUSUARIO | SEGUIR')} <b>IR</b>`;cta.classList.toggle('hidden',!cleanText(obj.label));}
-  const grid=root.querySelector('[id^="socialGrid"],.social-grid');if(!grid)return;grid.innerHTML='';
-  (cfg.socials||[]).filter(s=>s.enabled!==false).forEach(s=>{const card=document.createElement('a');card.className='social-card reveal in';card.href=safeLink(s.url);card.target='_blank';card.rel='noopener noreferrer';card.style.setProperty('--social-color',safeColor(s.color,'#ff2db7'));const socialImage=safeImage(s.image);if(socialImage){card.classList.add('has-image');const media=document.createElement('div');media.className='social-card-media';setBackgroundImage(media,socialImage);card.appendChild(media)}const head=document.createElement('div');head.className='social-card-head';const icon=document.createElement('div');icon.className='social-icon';icon.textContent=s.icon||'+';head.appendChild(icon);const copy=document.createElement('div');copy.className='social-copy';const h3=document.createElement('h3');h3.textContent=s.label||'Red';const p=document.createElement('p');p.textContent=s.handle||'';copy.append(h3,p);const go=document.createElement('span');go.className='circle-btn social-arrow text-badge';go.innerHTML='<span class="go-text">IR</span>';card.append(head,copy,go);grid.appendChild(card)});
-}
-function renderCultureInto(root,cfg){
-  const data=cfg.culture||{};setScopedText(root,'cultureTag',data.kicker||cfg.sectionHeaders?.culture?.tag||'');setScopedText(root,'cultureTitle1',data.title1||cfg.sectionHeaders?.culture?.title1||'');setScopedText(root,'cultureTitle2',data.title2||cfg.sectionHeaders?.culture?.title2||'');setScopedOptionalText(root,'cultureDescription',data.text);const cta=scopedEl(root,'cultureMainCta');if(cta){cta.href=safeLink(data.ctaUrl);cta.innerHTML=`${escapeHtml(data.ctaLabel||'@TUINSTAGRAM | SEGUIR')} <b>IR</b>`;}
-  const gallery=root.querySelector('[id^="cultureGallery"],.culture-gallery');if(!gallery)return;gallery.innerHTML='';(data.items||[]).filter(x=>x.enabled!==false).forEach(item=>{const meta=culturePlatformMeta(item);const a=document.createElement('a');a.className='culture-card reveal in';a.href=safeLink(item.url||data.ctaUrl);a.target='_blank';a.rel='noopener noreferrer';a.style.setProperty('--culture-accent',meta.color);a.appendChild(makeBackground(item.image,'culture-media'));const top=document.createElement('div');top.className='culture-card-top';top.appendChild(culturePlatformIcon(meta,item));const bottom=document.createElement('div');bottom.className='culture-card-bottom';const left=document.createElement('div');left.className='culture-card-copy';const h=document.createElement('h3');h.textContent=item.title||'POST';left.appendChild(h);const network=document.createElement('span');network.className='culture-platform-label';network.textContent=meta.label;left.appendChild(network);const text=cleanText(item.text);if(text){const p=document.createElement('p');p.textContent=text;left.appendChild(p)}const go=document.createElement('span');go.className='circle-btn text-badge culture-go';go.innerHTML='<span class="go-text">IR</span>';bottom.append(left,go);a.append(top,bottom);gallery.appendChild(a)});
 }
 function renderFeaturedInto(root, cfg){
   const track=root.querySelector('[id^="featuredTrack"]'); if(!track)return; track.innerHTML='';
@@ -862,28 +838,12 @@ function renderFeaturedInto(root, cfg){
 }
 function renderClipsInto(root,cfg){const grid=root.querySelector('[id^="clipsGrid"],.clips-grid');if(!grid)return;grid.innerHTML='';const h=cfg.sectionHeaders?.clips||{};setScopedText(root,'clipsTag',h.tag||'');setScopedText(root,'clipsTitle1',h.title1||'');setScopedText(root,'clipsTitle2',h.title2||'');(cfg.clips||[]).filter(x=>x.enabled!==false).forEach(item=>{const a=document.createElement('a');a.className='clip-card reveal in';a.href=safeLink(item.url);a.target='_blank';a.rel='noopener noreferrer';a.appendChild(makeBackground(item.image));const play=document.createElement('div');play.className='play';play.innerHTML='<span class="play-triangle"></span>';const copy=document.createElement('div');copy.className='clip-copy';const h3=document.createElement('h3');h3.textContent=item.title||'CLIP';copy.appendChild(h3);const subtitle=cleanText(item.subtitle);if(subtitle){const p=document.createElement('p');p.textContent=subtitle;copy.appendChild(p)}const go=document.createElement('span');go.className='circle-btn clip-go text-badge';go.innerHTML='<span class="go-text">IR</span>';a.append(play,copy,go);grid.appendChild(a)})}
 function renderCustomInto(root,cfg){const box=root.querySelector('[id^="customSections"]')||root;box.innerHTML='';const active=(cfg.customSections||[]).filter(s=>s.enabled!==false);const shell=document.createElement('div');shell.className='custom-carousel-shell';shell.innerHTML='<button class="rail-arrow rail-arrow-left custom-arrow" type="button" aria-label="Extra anterior">←</button><div class="custom-track"></div><button class="rail-arrow rail-arrow-right custom-arrow" type="button" aria-label="Extra siguiente">→</button>';const track=shell.querySelector('.custom-track');active.forEach((item,i)=>{const wrap=document.createElement('section');wrap.className='custom-block custom-card reveal in';wrap.id=item.anchorId||`custom-${i+1}`;const inner=document.createElement('div');inner.className=`custom-inner ${item.image?'with-image':''}`;const copy=document.createElement('div');copy.className='custom-copy';copy.innerHTML=`<div class="section-badge"><span>${escapeHtml(item.kicker||'NUEVA SECCIÓN')}</span></div><h2 class="display-title section-display"><span class="white">${escapeHtml(item.title1||'NUEVO')}</span><span>${escapeHtml(item.title2||'BLOQUE.')}</span></h2>`;const text=cleanText(item.text);if(text){const p=document.createElement('p');p.className='section-copy';p.textContent=text;copy.appendChild(p)}if(item.ctaEnabled!==false&&item.ctaLabel){const a=document.createElement('a');a.className='btn btn-outline';a.href=safeLink(item.ctaUrl);a.target='_blank';a.rel='noopener noreferrer';a.innerHTML=`${escapeHtml(item.ctaLabel)} <b>IR</b>`;copy.appendChild(a)}inner.appendChild(copy);if(item.image){const media=document.createElement('div');media.className='custom-media';media.appendChild(makeBackground(item.image,'custom-image'));inner.appendChild(media)}wrap.appendChild(inner);track.appendChild(wrap)});box.appendChild(shell);}
-
-function renderUpcomingInto(root,cfg){
-  const h=cfg.sectionHeaders?.upcoming||{};setScopedText(root,'upcomingTag',h.tag||'');setScopedText(root,'upcomingTitle1',h.title1||'');setScopedText(root,'upcomingTitle2',h.title2||'');setScopedOptionalText(root,'nextStreamTitle',cfg.nextStreamTitle);setScopedOptionalText(root,'nextStreamText',cfg.nextStreamText);const imgUrl=safeImage(cfg.nextStreamImage);const img=scopedEl(root,'nextStreamImage');const box=scopedEl(root,'nextStreamImageBox');const card=scopedEl(root,'upcomingCard');if(img)setBackgroundImage(img,imgUrl);box?.classList.toggle('no-image',!imgUrl);card?.classList.toggle('with-image',!!imgUrl);
-}
-function renderAnnouncementsInto(root,cfg){
-  setScopedOptionalText(root,'announcementKicker',cfg.sectionHeaders?.announcements?.tag||'07 / AVISOS');setScopedText(root,'announcementTitle1',cfg.sectionHeaders?.announcements?.title1||'LO ÚLTIMO');setScopedText(root,'announcementTitle2',cfg.sectionHeaders?.announcements?.title2||'DEL STREAM.');const track=root.querySelector('[id^="noticesTrack"],.notices-track');if(!track)return;track.innerHTML='';(cfg.announcements||[]).filter(x=>x&&x.enabled!==false).slice(0,12).forEach((notice,index)=>{const card=document.createElement('article');card.className='notice-card notice-carousel-card reveal in';card.dataset.noticeId=notice.id||String(index);const image=safeImage(notice.image);if(image){const media=document.createElement('div');media.className='notice-media';const img=document.createElement('img');img.src=image;img.alt=notice.title||'Aviso';img.loading='lazy';img.decoding='async';media.appendChild(img);card.appendChild(media);const toggle=document.createElement('button');toggle.type='button';toggle.className='notice-toggle';toggle.setAttribute('aria-expanded','false');toggle.innerHTML='Ver foto completa <span>⌄</span>';toggle.onclick=()=>{const expanded=card.classList.toggle('expanded');toggle.setAttribute('aria-expanded',expanded?'true':'false');toggle.innerHTML=expanded?'Ocultar foto <span>⌃</span>':'Ver foto completa <span>⌄</span>';};card.appendChild(toggle)}const content=document.createElement('div');content.className='notice-content';const kicker=cleanText(notice.kicker||'AVISO');if(kicker){const el=document.createElement('div');el.className='notice-kicker';el.textContent=kicker;content.appendChild(el)}const h3=document.createElement('h3');h3.textContent=notice.title||'AVISO / NOVEDAD';content.appendChild(h3);const chip=cleanText(notice.chip);if(chip){const place=document.createElement('div');place.className='notice-place';place.textContent=chip;content.appendChild(place)}const text=cleanText(notice.text);if(text){const p=document.createElement('p');p.textContent=text;content.appendChild(p)}const cta=cleanText(notice.cta);const url=String(notice.url||'').trim();if(cta&&url&&url!=='#'){const a=document.createElement('a');a.className='notice-button';a.href=safeLink(url);a.target='_blank';a.rel='noopener noreferrer';a.textContent=cta;content.appendChild(a)}card.appendChild(content);track.appendChild(card)});root.classList.toggle('no-notices',!track.children.length);
-}
-function renderAboutInto(root,cfg){
-  const h=cfg.sectionHeaders?.about||{};setScopedText(root,'aboutTag',h.tag||'');setScopedText(root,'aboutTitle1',h.title1||'');setScopedText(root,'aboutTitle2',h.title2||'');setScopedOptionalText(root,'aboutTitle',cfg.about?.title);setScopedOptionalText(root,'aboutText',cfg.about?.text);
-}
 function hydrateSectionInstance(el,c,item){
   if(!el||!item)return;applySectionStyle(el,item);
   const cfg=mergedConfigForItem(c,item);
   if(item.data){
-    if(item.type==='live')renderLiveInto(el,cfg);
-    if(item.type==='socials')renderSocialsInto(el,cfg);
-    if(item.type==='culture')renderCultureInto(el,cfg);
     if(item.type==='featured')renderFeaturedInto(el,cfg);
     if(item.type==='clips')renderClipsInto(el,cfg);
-    if(item.type==='upcoming')renderUpcomingInto(el,cfg);
-    if(item.type==='announcements')renderAnnouncementsInto(el,cfg);
-    if(item.type==='about')renderAboutInto(el,cfg);
     if(item.type==='custom')renderCustomInto(el,cfg);
   }
 }

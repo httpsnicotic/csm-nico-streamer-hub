@@ -1,0 +1,7 @@
+V5.8.13
+
+- Copias de secciones corregidas de raíz: textos, fotos, tarjetas y listas se editan de forma independiente.
+- El panel de Secciones queda más limpio para móvil: solo mostrar, renombrar, duplicar, ordenar y colores de título.
+- Colores de título por sección: color blanco y color neón.
+- La intensidad/dureza del neón queda solo en General/Efectos.
+- Carrusel principal más compacto en móvil para ver mejor la tarjeta central y un poco de las vecinas.
