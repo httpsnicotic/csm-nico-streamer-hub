@@ -195,7 +195,7 @@ window.DEFAULT_CONFIG = {
   ],
 
   about: { title:"", text:"" },
-  finalCta: { enabled:true, kicker:"NOS VEMOS EN EL PRÓXIMO", title:"NOS VEMOS EN DIRECTO." },
+  finalCta: { kicker:"NOS VEMOS EN EL PRÓXIMO", title:"NOS VEMOS EN DIRECTO." },
   customSections: [],
   sections: { live:true, socials:true, culture:true, featured:true, clips:true, upcoming:true, announcements:true, about:true, custom:true },
   sectionItems: [

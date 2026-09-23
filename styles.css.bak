@@ -768,15 +768,3 @@ img,
 .page-noise{display:none!important}
 .hero-bg{filter:none!important;opacity:1!important;mix-blend-mode:normal!important}
 .hero::before,.hero::after{background:transparent!important;opacity:0!important}
-
-/* V5.8.12 - carrusel centrado, extras en carrusel y estilo por sección */
-.page-section[data-title-mode="white"] .section-display span:not(.white){background:none!important;-webkit-background-clip:initial!important;background-clip:initial!important;color:var(--section-title-white)!important;text-shadow:0 0 18px rgba(255,255,255,.18)!important}
-.page-section[data-title-mode="pink"] .section-display span:not(.white){color:transparent}
-.page-section .feature-card.active,.page-section .clip-card,.page-section .culture-card,.page-section .custom-inner{border-color:color-mix(in srgb,var(--section-card-border,var(--primary)) 72%,rgba(255,255,255,.14))!important;box-shadow:0 18px 60px rgba(0,0,0,.38),0 0 32px color-mix(in srgb,var(--section-card-border,var(--primary)) var(--section-card-glow,70%),transparent)!important}
-.featured-section .carousel-viewport{overflow:hidden!important;padding-inline:0!important;width:100%}
-.featured-section .carousel-track{gap:18px!important;align-items:center!important}
-.feature-card{flex-basis:min(330px,68vw)!important;min-height:min(540px,118vw)!important}
-.feature-card.active{transform:scale(1.02)!important}
-.feature-card.neighbor{transform:scale(.94)!important;opacity:.74!important}
-@media(max-width:600px){.feature-card{flex-basis:68vw!important;min-height:500px!important;border-radius:28px!important}.feature-card h3{font-size:clamp(34px,11vw,52px)!important;max-width:76%!important}.featured-section .carousel-track{gap:14px!important}}
-.custom-carousel-shell{position:relative;width:100%;overflow:visible;margin-top:10px}.custom-track{display:flex;gap:18px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-inline:contain;padding:10px 4px 24px;scrollbar-width:none}.custom-track::-webkit-scrollbar{display:none}.custom-card{flex:0 0 min(720px,86vw);scroll-snap-align:center;margin-top:0!important}.custom-card .custom-inner{height:100%}.custom-arrow{display:grid!important}.custom-track .custom-image{min-height:360px}@media(max-width:700px){.custom-card{flex-basis:82vw}.custom-track{gap:14px;padding-inline:6px 24px}.custom-track .custom-image{min-height:260px}.custom-inner.with-image{grid-template-columns:1fr!important}}

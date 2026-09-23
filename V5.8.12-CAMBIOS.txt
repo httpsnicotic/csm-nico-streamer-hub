@@ -1,0 +1,10 @@
+CSMNICO V5.8.12
+
+Cambios solicitados:
+- Las copias de secciones ahora guardan una copia profunda de su contenido para que no compartan fotos/datos con la original.
+- En Secciones se puede ajustar por sección el color del título, color de borde de fotos y brillo del borde.
+- Extras ahora se muestra como carrusel con flechas laterales.
+- Cada bloque Extra tiene toggle para mostrar/ocultar su botón CTA.
+- El CTA final se puede activar/desactivar desde Sobre mí.
+- El carrusel principal usa tarjetas más pequeñas para ver un poco la anterior y la siguiente, manteniendo la tarjeta seleccionada en grande.
+- Se mantiene la conexión actual con Supabase y no se borran datos publicados.

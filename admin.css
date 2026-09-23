@@ -103,3 +103,13 @@ button{touch-action:manipulation}
   .admin-sidebar{backdrop-filter:none!important;background:#070709!important}
   .panel{scroll-margin-top:calc(var(--admin-mobile-top) + var(--admin-preview-h) + var(--admin-tools-h) + 8px)!important}
 }
+
+/* V5.8.12 - controles por sección y copias independientes */
+.section-row{grid-template-columns:auto minmax(0,1fr) auto auto auto!important}
+.section-style-row{grid-column:1 / -1;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:8px;align-items:end;padding-top:6px}
+.section-style-row label{font-size:10px!important;color:#aaa!important;letter-spacing:.08em;text-transform:uppercase}
+.section-style-row input,.section-style-row select{width:100%!important;height:36px!important;min-height:36px!important;margin-top:6px!important;padding:6px 8px!important;border-radius:9px!important}
+.section-style-row input[type="range"]{padding:0!important;accent-color:var(--pink)}
+.clone-editor-note{border:1px solid rgba(255,45,183,.35);background:rgba(255,45,183,.08);border-radius:14px;padding:12px 14px;margin-bottom:14px;color:#f8eefa;font:12px/1.45 "Inter",sans-serif}
+.clone-editor-note b{color:#fff;text-transform:uppercase;letter-spacing:.04em}
+@media(max-width:760px){.section-style-row{grid-template-columns:1fr}.section-row{grid-template-columns:auto minmax(0,1fr) auto auto auto!important}}

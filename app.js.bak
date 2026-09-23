@@ -16,7 +16,7 @@ function normalizeSectionItems(c) {
     let id = String(x.id || `${x.type}_${i+1}`);
     if (seen.has(id)) id = `${id}_${i+1}`;
     seen.add(id);
-    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false, data:x.data&&typeof x.data==='object'?x.data:undefined, style:x.style&&typeof x.style==='object'?x.style:{titleMode:'pink',borderColor:'',glow:70} };
+    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false };
   });
   SECTION_TYPES.forEach(type => { if (!items.some(x => x.type === type)) items.push({ id:type, type, name:SECTION_DEFAULT_NAMES[type] || type, enabled:c.sections?.[type] !== false }); });
   c.sectionItems = items;
@@ -622,13 +622,10 @@ function renderCustomSections(c) {
   container.innerHTML = "";
   const active = (c.customSections || []).filter(s => s.enabled !== false);
   document.getElementById("customSectionContainer")?.classList.toggle("hidden-section", !active.length || c.sections?.custom === false);
-  const shell=document.createElement('div');
-  shell.className='custom-carousel-shell';
-  shell.innerHTML='<button class="rail-arrow rail-arrow-left custom-arrow" type="button" aria-label="Extra anterior">←</button><div class="custom-track"></div><button class="rail-arrow rail-arrow-right custom-arrow" type="button" aria-label="Extra siguiente">→</button>';
-  const track=shell.querySelector('.custom-track');
+
   active.forEach((item, i) => {
     const wrap = document.createElement("section");
-    wrap.className = "custom-block custom-card reveal";
+    wrap.className = "custom-block reveal";
     wrap.id = item.anchorId || `custom-${i+1}`;
 
     const inner = document.createElement("div");
@@ -644,7 +641,7 @@ function renderCustomSections(c) {
       p.textContent = text;
       copy.appendChild(p);
     }
-    if (item.ctaEnabled !== false && item.ctaLabel) {
+    if (item.ctaLabel) {
       const a = document.createElement("a");
       a.className = "btn btn-outline";
       a.href = safeLink(item.ctaUrl);
@@ -661,9 +658,8 @@ function renderCustomSections(c) {
       inner.appendChild(media);
     }
     wrap.appendChild(inner);
-    track.appendChild(wrap);
+    container.appendChild(wrap);
   });
-  container.appendChild(shell);
 }
 
 function renderAnnouncements(c) {
@@ -752,14 +748,11 @@ function sectionInstanceVisible(c, item) {
   if (item.enabled === false) return false;
   if (item.type === 'culture' && c.culture?.enabled === false) return false;
   if (item.type === 'announcements') {
-    const list = item.data?.announcements || c.announcements || [];
-    const ann = item.data?.announcement || c.announcement || {};
-    const hasNotices = list.some(x => x && x.enabled !== false);
-    if (ann.enabled === false || !hasNotices) return false;
+    const hasNotices = (c.announcements || []).some(x => x && x.enabled !== false);
+    if (c.announcement?.enabled === false || !hasNotices) return false;
   }
   if (item.type === 'custom') {
-    const list = item.data?.customSections || c.customSections || [];
-    const hasCustom = list.some(x => x && x.enabled !== false);
+    const hasCustom = (c.customSections || []).some(x => x && x.enabled !== false);
     if (!hasCustom) return false;
   }
   return true;
@@ -785,7 +778,6 @@ function applySections(c) {
     el.dataset.sectionName = item.name || '';
     el.classList.toggle('hidden-section', !sectionInstanceVisible(c,item));
     container.appendChild(el);
-    hydrateSectionInstance(el,c,item);
   });
 }
 
@@ -793,59 +785,6 @@ function setSectionHeader(prefix, obj = {}) {
   setText(`${prefix}Tag`, obj.tag || "");
   setText(`${prefix}Title1`, obj.title1 || "");
   setText(`${prefix}Title2`, obj.title2 || "");
-}
-
-function setScopedText(root, idPrefix, value) {
-  const el = root.querySelector(`[id^="${idPrefix}"]`);
-  if (el) el.textContent = value ?? "";
-}
-function setScopedOptionalText(root, idPrefix, value) {
-  const el = root.querySelector(`[id^="${idPrefix}"]`);
-  if (el) {
-    const txt = cleanText(value);
-    el.textContent = txt;
-    el.classList.toggle("hidden", !txt);
-  }
-}
-function getSectionStyle(item = {}) {
-  const st = item.style || {};
-  const border = safeColor(st.borderColor || "", "#ff2db7");
-  const glow = Math.max(0, Math.min(100, Number(st.glow ?? 70)));
-  return { titleMode: st.titleMode === "white" ? "white" : "pink", border, glow };
-}
-function applySectionStyle(root,item){
-  const st=getSectionStyle(item);
-  root.dataset.titleMode=st.titleMode;
-  root.style.setProperty('--section-card-border',st.border);
-  root.style.setProperty('--section-card-glow',`${st.glow}%`);
-}
-function mergedConfigForItem(c,item){
-  if(!item?.data) return c;
-  const d=item.data;
-  const out={...c,...d,sectionHeaders:{...(c.sectionHeaders||{}),...(d.sectionHeaders||{})}};
-  return out;
-}
-function renderFeaturedInto(root, cfg){
-  const track=root.querySelector('[id^="featuredTrack"]'); if(!track)return; track.innerHTML='';
-  const h=cfg.sectionHeaders?.featured||{}; setScopedText(root,'featuredTag',h.tag||''); setScopedText(root,'featuredTitle1',h.title1||''); setScopedText(root,'featuredTitle2',h.title2||'');
-  (cfg.featured||[]).filter(x=>x.enabled!==false).forEach((item,i)=>{
-    const a=document.createElement('a');a.className='feature-card';a.href=safeLink(item.url);a.target='_blank';a.rel='noopener noreferrer';a.style.setProperty('--card-glow',safeColor(item.glow||cfg.theme?.primary,'#ff2db7'));a.dataset.index=String(i);a.appendChild(makeBackground(item.image));
-    const index=document.createElement('span');index.className='feature-index';index.textContent=item.kicker||`0${i+1}`;a.appendChild(index);
-    const badgeImage=safeImage(item.badgeImage);if(badgeImage){const img=document.createElement('img');img.className='feature-badge-image';img.src=badgeImage;img.loading='lazy';img.decoding='async';img.alt='';a.appendChild(img)}
-    const h3=document.createElement('h3');h3.textContent=item.title||'DESTACADO';a.appendChild(h3);const subtitle=cleanText(item.subtitle);if(subtitle){const p=document.createElement('p');p.textContent=subtitle;a.appendChild(p)}
-    const go=document.createElement('span');go.className='circle-btn arrow-only text-badge';go.innerHTML='<span class="go-text">IR</span>';a.appendChild(go);track.appendChild(a)
-  });
-}
-function renderClipsInto(root,cfg){const grid=root.querySelector('[id^="clipsGrid"],.clips-grid');if(!grid)return;grid.innerHTML='';const h=cfg.sectionHeaders?.clips||{};setScopedText(root,'clipsTag',h.tag||'');setScopedText(root,'clipsTitle1',h.title1||'');setScopedText(root,'clipsTitle2',h.title2||'');(cfg.clips||[]).filter(x=>x.enabled!==false).forEach(item=>{const a=document.createElement('a');a.className='clip-card reveal in';a.href=safeLink(item.url);a.target='_blank';a.rel='noopener noreferrer';a.appendChild(makeBackground(item.image));const play=document.createElement('div');play.className='play';play.innerHTML='<span class="play-triangle"></span>';const copy=document.createElement('div');copy.className='clip-copy';const h3=document.createElement('h3');h3.textContent=item.title||'CLIP';copy.appendChild(h3);const subtitle=cleanText(item.subtitle);if(subtitle){const p=document.createElement('p');p.textContent=subtitle;copy.appendChild(p)}const go=document.createElement('span');go.className='circle-btn clip-go text-badge';go.innerHTML='<span class="go-text">IR</span>';a.append(play,copy,go);grid.appendChild(a)})}
-function renderCustomInto(root,cfg){const box=root.querySelector('[id^="customSections"]')||root;box.innerHTML='';const active=(cfg.customSections||[]).filter(s=>s.enabled!==false);const shell=document.createElement('div');shell.className='custom-carousel-shell';shell.innerHTML='<button class="rail-arrow rail-arrow-left custom-arrow" type="button" aria-label="Extra anterior">←</button><div class="custom-track"></div><button class="rail-arrow rail-arrow-right custom-arrow" type="button" aria-label="Extra siguiente">→</button>';const track=shell.querySelector('.custom-track');active.forEach((item,i)=>{const wrap=document.createElement('section');wrap.className='custom-block custom-card reveal in';wrap.id=item.anchorId||`custom-${i+1}`;const inner=document.createElement('div');inner.className=`custom-inner ${item.image?'with-image':''}`;const copy=document.createElement('div');copy.className='custom-copy';copy.innerHTML=`<div class="section-badge"><span>${escapeHtml(item.kicker||'NUEVA SECCIÓN')}</span></div><h2 class="display-title section-display"><span class="white">${escapeHtml(item.title1||'NUEVO')}</span><span>${escapeHtml(item.title2||'BLOQUE.')}</span></h2>`;const text=cleanText(item.text);if(text){const p=document.createElement('p');p.className='section-copy';p.textContent=text;copy.appendChild(p)}if(item.ctaEnabled!==false&&item.ctaLabel){const a=document.createElement('a');a.className='btn btn-outline';a.href=safeLink(item.ctaUrl);a.target='_blank';a.rel='noopener noreferrer';a.innerHTML=`${escapeHtml(item.ctaLabel)} <b>IR</b>`;copy.appendChild(a)}inner.appendChild(copy);if(item.image){const media=document.createElement('div');media.className='custom-media';media.appendChild(makeBackground(item.image,'custom-image'));inner.appendChild(media)}wrap.appendChild(inner);track.appendChild(wrap)});box.appendChild(shell);}
-function hydrateSectionInstance(el,c,item){
-  if(!el||!item)return;applySectionStyle(el,item);
-  const cfg=mergedConfigForItem(c,item);
-  if(item.data){
-    if(item.type==='featured')renderFeaturedInto(el,cfg);
-    if(item.type==='clips')renderClipsInto(el,cfg);
-    if(item.type==='custom')renderCustomInto(el,cfg);
-  }
 }
 
 function setupCarousel(c, root = document) {
@@ -950,7 +889,6 @@ function setupRailCarousel(root, trackSelector, prevSelector, nextSelector, card
 }
 function setupCultureCarousel(root = document) { setupRailCarousel(root, ".culture-gallery", ".culture-arrow.rail-arrow-left", ".culture-arrow.rail-arrow-right", ".culture-card", true); }
 function setupNoticesCarousel(root = document) { setupRailCarousel(root, ".notices-track", ".notice-arrow.rail-arrow-left", ".notice-arrow.rail-arrow-right", ".notice-carousel-card", false); }
-function setupCustomCarousel(root = document) { setupRailCarousel(root, ".custom-track", ".custom-arrow.rail-arrow-left", ".custom-arrow.rail-arrow-right", ".custom-card", false); }
 function setupClipsCarousel(root = document) {
   const track = root.querySelector ? root.querySelector(".clips-grid") : null; if(!track)return;
   const step=()=>{const card=track.querySelector(".clip-card");if(!card)return Math.max(260,track.clientWidth*.82);return card.getBoundingClientRect().width+parseFloat(getComputedStyle(track).gap||18)};
@@ -1135,7 +1073,6 @@ async function init() {
 
   setOptionalText("aboutTitle", c.about?.title);
   setOptionalText("aboutText", c.about?.text);
-  document.querySelector(".final-cta")?.classList.toggle("hidden-section", c.finalCta?.enabled === false);
   setOptionalText("finalKicker", c.finalCta?.kicker);
   const finalTitle = cleanText(c.finalCta?.title || "NOS VEMOS EN DIRECTO.");
   document.getElementById("finalTitle").innerHTML = escapeHtml(finalTitle).replace(/(\S+\.)$/, "<span>$1</span>");
@@ -1147,7 +1084,6 @@ async function init() {
   document.querySelectorAll('[data-section="clips"]').forEach(sec => setupClipsCarousel(sec));
   document.querySelectorAll('[data-section="culture"]').forEach(sec => setupCultureCarousel(sec));
   document.querySelectorAll('[data-section="announcements"]').forEach(sec => setupNoticesCarousel(sec));
-  document.querySelectorAll('[data-section="custom"]').forEach(sec => setupCustomCarousel(sec));
   setupReveal(c);
   setupAmbient(c);
   startCountdown(c.nextStreamISO);
