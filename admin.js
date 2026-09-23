@@ -190,7 +190,28 @@ function renderFeatured(){
   const w=document.getElementById("featuredEditor");w.innerHTML=cloneNotice(ctx.item,'featured');(root.featured||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Tarjeta ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-featured="${i}">↑</button><button class="icon-btn" data-down-featured="${i}">↓</button><button class="icon-btn danger" data-remove-featured="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-featured="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Kicker<input data-featured="${i}" data-field="kicker" value="${esc(x.kicker)}"></label><label>Título<input data-featured="${i}" data-field="title" value="${esc(x.title)}"></label><label class="full">Subtítulo<input data-featured="${i}" data-field="subtitle" value="${esc(x.subtitle)}"></label><label class="full">URL<input data-featured="${i}" data-field="url" value="${esc(x.url)}"></label><label>Color glow / borde<input data-featured="${i}" data-field="glow" value="${esc(x.glow)}"></label>${arrayImageField(base,i,'image',x.image,'Imagen principal')}${arrayImageField(base,i,'badgeImage',x.badgeImage,'Imagen/logo central (opcional)')}</div>`;w.appendChild(d)});w.querySelectorAll("[data-featured]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{root.featured[Number(e.dataset.featured)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;previewSignature="";markDirty()}));w.querySelectorAll("[data-remove-featured]").forEach(b=>b.onclick=()=>{root.featured.splice(Number(b.dataset.removeFeatured),1);renderFeatured();bindImages();previewSignature="";markDirty()});w.querySelectorAll('[data-up-featured]').forEach(b=>b.onclick=()=>moveArray(root.featured,Number(b.dataset.upFeatured),-1,()=>{renderFeatured();bindImages()}));w.querySelectorAll('[data-down-featured]').forEach(b=>b.onclick=()=>moveArray(root.featured,Number(b.dataset.downFeatured),1,()=>{renderFeatured();bindImages()}))}
 function renderClips(){const ctx=sectionEditorContext('clips'), root=ctx.root, base=ctx.path?`${ctx.path}.clips`:'clips';const w=document.getElementById("clipsEditor");w.innerHTML=cloneNotice(ctx.item,'clips');(root.clips||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Clip ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-clip="${i}">↑</button><button class="icon-btn" data-down-clip="${i}">↓</button><button class="icon-btn danger" data-remove-clip="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-clip="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Título<input data-clip="${i}" data-field="title" value="${esc(x.title)}"></label><label>Subtítulo<input data-clip="${i}" data-field="subtitle" value="${esc(x.subtitle)}"></label><label class="full">URL<input data-clip="${i}" data-field="url" value="${esc(x.url)}"></label>${arrayImageField(base,i,'image',x.image)}</div>`;w.appendChild(d)});w.querySelectorAll("[data-clip]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{root.clips[Number(e.dataset.clip)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;previewSignature="";markDirty()}));w.querySelectorAll("[data-remove-clip]").forEach(b=>b.onclick=()=>{root.clips.splice(Number(b.dataset.removeClip),1);renderClips();bindImages();previewSignature="";markDirty()});w.querySelectorAll('[data-up-clip]').forEach(b=>b.onclick=()=>moveArray(root.clips,Number(b.dataset.upClip),-1,()=>{renderClips();bindImages()}));w.querySelectorAll('[data-down-clip]').forEach(b=>b.onclick=()=>moveArray(root.clips,Number(b.dataset.downClip),1,()=>{renderClips();bindImages()}))}
 function renderCustomSections(){const ctx=sectionEditorContext('custom'), root=ctx.root, base=ctx.path?`${ctx.path}.customSections`:'customSections';const w=document.getElementById('customSectionEditor');w.innerHTML=cloneNotice(ctx.item,'custom');(root.customSections||[]).forEach((s,i)=>{if(s.ctaEnabled==null)s.ctaEnabled=true;const d=document.createElement('div');d.className='subcard';d.innerHTML=`<div class="subcard-head"><h3>Sección extra ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-custom="${i}">↑</button><button class="icon-btn" data-down-custom="${i}">↓</button><button class="icon-btn danger" data-remove-custom="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-custom="${i}" data-field="enabled" ${s.enabled!==false?'checked':''}></label><label>Tag<input data-custom="${i}" data-field="kicker" value="${esc(s.kicker)}"></label><label>ID / ancla<input data-custom="${i}" data-field="anchorId" value="${esc(s.anchorId)}"></label><label>Título blanco<input data-custom="${i}" data-field="title1" value="${esc(s.title1)}"></label><label>Título neon<input data-custom="${i}" data-field="title2" value="${esc(s.title2)}"></label><label class="full">Texto<textarea data-custom="${i}" data-field="text">${esc(s.text)}</textarea></label><label class="toggle-row"><span>Mostrar botón CTA</span><input type="checkbox" data-custom="${i}" data-field="ctaEnabled" ${s.ctaEnabled!==false?'checked':''}></label><label>Botón CTA<input data-custom="${i}" data-field="ctaLabel" value="${esc(s.ctaLabel)}"></label><label>URL CTA<input data-custom="${i}" data-field="ctaUrl" value="${esc(s.ctaUrl)}"></label>${imageField(`${base}.${i}.image`,s.image)}</div>`;w.appendChild(d)});w.querySelectorAll('[data-custom]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{root.customSections[Number(e.dataset.custom)][e.dataset.field]=e.type==='checkbox'?e.checked:e.value;previewSignature='';markDirty()}));w.querySelectorAll('[data-remove-custom]').forEach(b=>b.onclick=()=>{root.customSections.splice(Number(b.dataset.removeCustom),1);renderCustomSections();bindImages();previewSignature='';markDirty()});w.querySelectorAll('[data-up-custom]').forEach(b=>b.onclick=()=>moveArray(root.customSections,Number(b.dataset.upCustom),-1,()=>{renderCustomSections();bindImages()}));w.querySelectorAll('[data-down-custom]').forEach(b=>b.onclick=()=>moveArray(root.customSections,Number(b.dataset.downCustom),1,()=>{renderCustomSections();bindImages()}))}
-function renderAnnouncements(){const ctx=sectionEditorContext('announcements'),root=ctx.root,base=ctx.path?`${ctx.path}.announcements`:'announcements';root.announcements??=[];const w=document.getElementById("announcementEditor");if(!w)return;w.innerHTML=cloneNotice(ctx.item,'announcements');(root.announcements||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Aviso ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-announcement="${i}">↑</button><button class="icon-btn" data-down-announcement="${i}">↓</button><button class="icon-btn danger" data-remove-announcement="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-announcement="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Etiqueta pequeña<input data-announcement="${i}" data-field="kicker" value="${esc(x.kicker||'AVISO')}"></label><label>Lugar / chip<input data-announcement="${i}" data-field="chip" value="${esc(x.chip||'')}"></label><label class="full">Título<input data-announcement="${i}" data-field="title" value="${esc(x.title||'')}"></label><label class="full">Texto<textarea data-announcement="${i}" data-field="text">${esc(x.text||'')}</textarea></label><label>Texto botón externo<input data-announcement="${i}" data-field="cta" value="${esc(x.cta||'')}"></label><label>URL botón externo<input data-announcement="${i}" data-field="url" value="${esc(x.url||'#')}"></label>${imageField(`${base}.${i}.image`,x.image,'Imagen del aviso')}</div>`;w.appendChild(d)});w.querySelectorAll('[data-announcement]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{const item=root.announcements[Number(e.dataset.announcement)];item[e.dataset.field]=e.type==='checkbox'?e.checked:e.value;markDirty()}));w.querySelectorAll('[data-remove-announcement]').forEach(b=>b.onclick=()=>{root.announcements.splice(Number(b.dataset.removeAnnouncement),1);renderAnnouncements();bindImages();markDirty()});w.querySelectorAll('[data-up-announcement]').forEach(b=>b.onclick=()=>moveArray(root.announcements,Number(b.dataset.upAnnouncement),-1,()=>{renderAnnouncements();bindImages()}));w.querySelectorAll('[data-down-announcement]').forEach(b=>b.onclick=()=>moveArray(root.announcements,Number(b.dataset.downAnnouncement),1,()=>{renderAnnouncements();bindImages()}))}
+function renderAnnouncements(){
+  const ctx=sectionEditorContext('announcements'),root=ctx.root,base=ctx.path?`${ctx.path}.announcements`:'announcements';
+  root.announcements??=[];
+  const w=document.getElementById("announcementEditor");if(!w)return;
+  w.innerHTML=cloneNotice(ctx.item,'announcements');
+  (root.announcements||[]).forEach((x,i)=>{
+    const d=document.createElement("div");d.className="subcard";
+    d.innerHTML=`<div class="subcard-head"><h3>Aviso ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-announcement="${i}">↑</button><button class="icon-btn" data-down-announcement="${i}">↓</button><button class="icon-btn danger" data-remove-announcement="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-announcement="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Etiqueta pequeña<input data-announcement="${i}" data-field="kicker" value="${esc(x.kicker||'')}"></label><label>Lugar / chip<input data-announcement="${i}" data-field="chip" value="${esc(x.chip||'')}"></label><label class="full">Título<input data-announcement="${i}" data-field="title" value="${esc(x.title||'')}"></label><label class="full">Texto<textarea data-announcement="${i}" data-field="text">${esc(x.text||'')}</textarea></label><label>Texto botón externo<input data-announcement="${i}" data-field="cta" value="${esc(x.cta||'')}"></label><label>URL botón externo<input data-announcement="${i}" data-field="url" value="${esc(x.url||'#')}"></label>${imageField(`${base}.${i}.image`,x.image,'Imagen del aviso')}</div>`;
+    w.appendChild(d)
+  });
+  w.querySelectorAll('[data-announcement]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{
+    const idx=Number(e.dataset.announcement),field=e.dataset.field;
+    root.announcements[idx]??={id:uid('notice'),enabled:true,kicker:'',chip:'',title:'',text:'',cta:'',url:'#',image:''};
+    const value=e.type==='checkbox'?e.checked:e.value;
+    root.announcements[idx][field]=value;
+    setByPath(draft,`${base}.${idx}.${field}`,value);
+    previewSignature='';markDirty();
+  }));
+  w.querySelectorAll('[data-remove-announcement]').forEach(b=>b.onclick=()=>{root.announcements.splice(Number(b.dataset.removeAnnouncement),1);setByPath(draft,base,root.announcements);renderAnnouncements();bindImages();markDirty()});
+  w.querySelectorAll('[data-up-announcement]').forEach(b=>b.onclick=()=>moveArray(root.announcements,Number(b.dataset.upAnnouncement),-1,()=>{setByPath(draft,base,root.announcements);renderAnnouncements();bindImages()}));
+  w.querySelectorAll('[data-down-announcement]').forEach(b=>b.onclick=()=>moveArray(root.announcements,Number(b.dataset.downAnnouncement),1,()=>{setByPath(draft,base,root.announcements);renderAnnouncements();bindImages()}));
+}
 function renderSections(){
   normalizeSectionItems(draft);
   const w=document.getElementById("sectionEditor");w.innerHTML="";
@@ -259,6 +280,17 @@ function frameReady(frame){try{return !!(frame?.contentDocument?.documentElement
 const PANEL_TO_PREVIEW={general:'#hero',nav:'#hero',theme:'#hero',effects:'#hero',live:'#liveSection',socials:'#socials',cultureAdmin:'#culture',featured:'#featured',clips:'#clips',upcoming:'#upcoming',announcement:'#announcements',about:'#about',extras:'#customSectionContainer',sections:'#dynamicSections',history:'footer'};
 const PANEL_LABELS={general:'PORTADA',nav:'PORTADA',theme:'PORTADA',effects:'PORTADA',live:'KICK / EN VIVO',socials:'REDES',cultureAdmin:'INSTAGRAM',featured:'DESTACADO',clips:'CLIPS',upcoming:'PRÓXIMO STREAM',announcement:'AVISOS',about:'SOBRE MÍ',extras:'EXTRA',sections:'SECCIONES',history:'PIE / HISTORIAL'};
 let activePanelId='general',syncRAF=0,lastSyncedPanel='';
+function previewTargetForPanel(panelId=activePanelId){
+  let target=PANEL_TO_PREVIEW[panelId];
+  if(activeSectionItemId&&draft?.sectionItems){
+    const item=draft.sectionItems.find(x=>x.id===activeSectionItemId);
+    if(item&&SECTION_PANEL_IDS[item.type]===panelId){
+      const safeId=String(item.id).replace(/\"/g,'\\\"');
+      target=`[data-section-instance="${safeId}"]`;
+    }
+  }
+  return target;
+}
 function scrollPreviewFrame(frameId,target,force=false){
   try{
     const frame=document.getElementById(frameId);if(!frameReady(frame)||!target)return;
@@ -274,8 +306,7 @@ function scrollPreviewFrame(frameId,target,force=false){
 }
 function syncPreviewToPanel(panelId,force=false){
   activePanelId=panelId||activePanelId;
-  let target=PANEL_TO_PREVIEW[activePanelId];
-  if(activeSectionItemId&&draft?.sectionItems){const item=draft.sectionItems.find(x=>x.id===activeSectionItemId);if(item&&SECTION_PANEL_IDS[item.type]===activePanelId)target=`[data-section-instance="${item.id}"]`;}
+  const target=previewTargetForPanel(activePanelId);
   if(!target)return;
   scrollPreviewFrame('previewFrame',target,force);
   const full=document.getElementById('fullPreviewModal');
@@ -343,14 +374,40 @@ function installPreviewSync(){
   document.getElementById('fullPreviewFrame')?.addEventListener('load',()=>requestAnimationFrame(()=>syncPreviewToPanel(activePanelId,true)));
   schedulePreviewSync();
 }
+
+function flushCurrentPanelEdits(){
+  try{
+    document.querySelectorAll('[data-path]').forEach(el=>{
+      const p=el.dataset.effectivePath||effectivePathFor(el.dataset.path,el.closest('.panel')?.id||activePanelId);
+      if(p)setByPath(draft,p,el.type==='checkbox'?el.checked:(el.dataset.number!==undefined||el.type==='number'||el.type==='range'?Number(el.value):el.value));
+    });
+    if(activePanelId==='announcement'){
+      const ctx=sectionEditorContext('announcements');
+      const base=ctx.path?`${ctx.path}.announcements`:'announcements';
+      const w=document.getElementById('announcementEditor');
+      if(w&&ctx.root){
+        ctx.root.announcements??=[];
+        w.querySelectorAll('[data-announcement][data-field]').forEach(e=>{
+          const i=Number(e.dataset.announcement),field=e.dataset.field;
+          if(!Number.isFinite(i))return;
+          ctx.root.announcements[i]??={id:uid('notice'),enabled:true,kicker:'',chip:'',title:'',text:'',cta:'',url:'#',image:''};
+          const value=e.type==='checkbox'?e.checked:e.value;
+          ctx.root.announcements[i][field]=value;
+          setByPath(draft,`${base}.${i}.${field}`,value);
+        });
+      }
+    }
+  }catch(e){console.warn('No se pudo sincronizar el panel antes del preview:',e)}
+}
+
 async function writePreview(includeFull=false){
+  flushCurrentPanelEdits();
   const f1=document.getElementById('previewFrame'),f2=document.getElementById('fullPreviewFrame');
-  const p1=getFrameScroll(f1),target=PANEL_TO_PREVIEW[activePanelId];
-  /* Preview rápido: los iframes son del mismo origen, así que leen el borrador
-     directamente de la ventana admin. IndexedDB queda solo como respaldo y no
-     bloquea el botón. */
+  const p1=getFrameScroll(f1),target=previewTargetForPanel(activePanelId);
+  /* El preview ahora guarda el borrador antes de recargar el iframe.
+     Así las copias editadas no leen una vista previa vieja desde IndexedDB. */
   window.__STREAMER_PREVIEW_DRAFT__=clone(draft);
-  setTimeout(()=>window.LocalConfigDB?.set(PREVIEW_KEY,draft).catch(e=>console.warn('Preview backup failed',e)),700);
+  try{await window.LocalConfigDB?.set(PREVIEW_KEY,draft)}catch(e){console.warn('Preview backup failed',e)}
   previewSignature=previewToken();
   const u='index.html?preview=1&fast=1';
   const reload=(frame,pos)=>{

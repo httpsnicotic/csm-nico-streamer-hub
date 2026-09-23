@@ -1,0 +1,6 @@
+V5.8.16 - FIX PREVIEW ANUNCIO COPIA
+
+- El botón VISTA PREVIA ahora guarda el borrador actual antes de recargar el iframe.
+- Se sincronizan los campos visibles de Anuncio/Anuncio copia antes del preview.
+- Corrige el bug donde la copia mostraba información vieja del original o de un preview anterior.
+- No se tocaron los cambios del carrusel de V5.8.15.

@@ -751,15 +751,16 @@ function rewriteCloneIds(root, suffix) {
 }
 function sectionInstanceVisible(c, item) {
   if (item.enabled === false) return false;
-  if (item.type === 'culture' && c.culture?.enabled === false) return false;
+  const isClone = item && item.id !== item.type;
+  if (item.type === 'culture' && !isClone && c.culture?.enabled === false) return false;
   if (item.type === 'announcements') {
-    const list = item.data?.announcements || c.announcements || [];
-    const ann = item.data?.announcement || c.announcement || {};
+    const list = isClone ? (Array.isArray(item.data?.announcements) ? item.data.announcements : []) : (Array.isArray(c.announcements) ? c.announcements : []);
+    const ann = isClone ? (item.data?.announcement || {}) : (c.announcement || {});
     const hasNotices = list.some(x => x && x.enabled !== false);
     if (ann.enabled === false || !hasNotices) return false;
   }
   if (item.type === 'custom') {
-    const list = item.data?.customSections || c.customSections || [];
+    const list = isClone ? (Array.isArray(item.data?.customSections) ? item.data.customSections : []) : (Array.isArray(c.customSections) ? c.customSections : []);
     const hasCustom = list.some(x => x && x.enabled !== false);
     if (!hasCustom) return false;
   }
@@ -862,9 +863,21 @@ function applySectionStyle(root,item){
   root.style.setProperty('--section-card-glow-px',`${Math.round(10+68*st.glow)}px`);
 }
 function mergedConfigForItem(c,item){
+  const isClone = item && item.id !== item.type;
   if(!item?.data) return {...c,__sectionClone:false,__sectionInstanceId:item?.id||''};
-  const d=item.data;
-  const out={...c,...d,sectionHeaders:{...(c.sectionHeaders||{}),...(d.sectionHeaders||{})},__sectionClone:item.id!==item.type,__sectionInstanceId:item.id||''};
+  const d=item.data || {};
+  const out={...c,...d,sectionHeaders:{...(c.sectionHeaders||{}),...(d.sectionHeaders||{})},__sectionClone:isClone,__sectionInstanceId:item.id||''};
+  if(isClone){
+    if(item.type==='announcements'){
+      out.announcements = Array.isArray(d.announcements) ? d.announcements : [];
+      out.announcement = d.announcement && typeof d.announcement === 'object' ? d.announcement : {enabled:true};
+    }
+    if(item.type==='featured') out.featured = Array.isArray(d.featured) ? d.featured : [];
+    if(item.type==='clips') out.clips = Array.isArray(d.clips) ? d.clips : [];
+    if(item.type==='socials') out.socials = Array.isArray(d.socials) ? d.socials : [];
+    if(item.type==='custom') out.customSections = Array.isArray(d.customSections) ? d.customSections : [];
+    if(item.type==='culture') out.culture = d.culture && typeof d.culture === 'object' ? d.culture : {items:[]};
+  }
   return out;
 }
 

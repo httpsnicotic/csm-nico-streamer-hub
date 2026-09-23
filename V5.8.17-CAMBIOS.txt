@@ -1,0 +1,5 @@
+V5.8.17
+- Fix real del preview para Anuncio duplicado.
+- Las copias de Anuncio ya no caen visualmente al contenido del original.
+- Los campos del editor de Anuncio copia se guardan por ruta exacta antes del preview.
+- Si una copia queda vacía, se oculta en vez de mostrar la información del original.
