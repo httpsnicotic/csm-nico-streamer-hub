@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050506">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Canjes + Patrocinadores</title>
+  <meta name="description" content="Canjes, códigos de descuento y patrocinadores oficiales del stream.">
+  <link rel="preconnect" href="https://pvvkuwqgvmnhsvymawxk.supabase.co" crossorigin>
+  <link rel="dns-prefetch" href="//pvvkuwqgvmnhsvymawxk.supabase.co">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=5.8.49">
+</head>
+<body data-page="sponsors">
+  <div id="previewRibbon" class="preview-ribbon hidden">VISTA PREVIA · NO PUBLICADO</div>
+  <div class="page-noise"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="particles" id="particles" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html#top" aria-label="Inicio"><span id="brandBase">CSM</span><span id="brandAccent">NICO</span></a>
+    <nav class="desktop-nav" id="desktopNav"></nav>
+    <a class="live-pill" id="headerKick" href="#" target="_blank" rel="noopener noreferrer"><i></i><span>KICK</span></a>
+  </header>
+
+  <main id="top" class="sponsors-page-main">
+      <section id="sponsors" class="section page-section sponsors-section" data-section="sponsors">
+        <div class="sponsors-shell reveal">
+          <div class="sponsors-head">
+            <div>
+              <div class="section-badge sponsor-badge"><span id="sponsorsTag">08 / CANJES</span></div>
+              <h2 class="display-title section-display sponsors-display"><span id="sponsorsTitle1" class="white">CANJES +</span><span id="sponsorsTitle2">PATROCINADORES.</span></h2>
+              <p id="sponsorsIntro" class="section-copy sponsors-intro"></p>
+            </div>
+            <a id="sponsorsBackBtn" class="btn btn-outline sponsors-back" href="#top">VOLVER AL INICIO</a>
+          </div>
+
+          <div class="sponsor-vip-panel">
+            <div class="sponsor-panel-title"><span>✦</span><h3 id="sponsorsVipTitle">PATROCINADORES VIP</h3></div>
+            <div id="sponsorVipGrid" class="sponsor-vip-grid"></div>
+          </div>
+
+          <div class="sponsor-deals-block">
+            <div class="sponsor-panel-title"><span>↯</span><h3 id="sponsorsDealsTitle">CANJES ACTIVOS</h3></div>
+            <div class="sponsor-deals-shell">
+              <button id="prevSponsorDeal" class="rail-arrow rail-arrow-left sponsor-arrow" type="button" aria-label="Canje anterior">←</button>
+              <div id="sponsorDealsTrack" class="sponsor-deals-track"></div>
+              <button id="nextSponsorDeal" class="rail-arrow rail-arrow-right sponsor-arrow" type="button" aria-label="Canje siguiente">→</button>
+            </div>
+          </div>
+
+          <div class="sponsor-partners-panel">
+            <div class="sponsor-panel-title mini"><span>•</span><h3 id="sponsorsPartnersTitle">PATROCINADORES</h3></div>
+            <div id="sponsorPartnersGrid" class="sponsor-partners-grid"></div>
+          </div>
+        </div>
+      </section>
+
+
+  </main>
+
+  <footer class="footer"><div class="brand footer-brand"><span id="footerBrandBase">CSM</span><span id="footerBrandAccent">NICO</span></div><div class="footer-bottom"><span>© <span id="year"></span> <span id="copyrightBrand">CSMNICO</span></span><span>CANJES + PATROCINADORES</span></div></footer>
+
+  <script src="local-db.js?v=5.8.49"></script>
+  <script src="config.js?v=5.8.49"></script>
+  <script src="default-content.js?v=5.8.49"></script>
+  <script src="cloud.js?v=5.8.49"></script>
+  <script src="app.js?v=5.8.49"></script>
+</body>
+</html>

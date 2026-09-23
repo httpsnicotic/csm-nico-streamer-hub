@@ -13,9 +13,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=5.8.18">
+  <link rel="stylesheet" href="styles.css?v=5.8.49">
 </head>
-<body>
+<body data-page="home">
   <div id="previewRibbon" class="preview-ribbon hidden">VISTA PREVIA · NO PUBLICADO</div>
   <div class="page-noise"></div>
   <div class="cursor-glow" id="cursorGlow"></div>
@@ -40,6 +40,7 @@
           <a id="primaryCta" class="btn btn-gradient" href="#" target="_blank" rel="noopener noreferrer">VER EN KICK <b>↗</b></a>
           <a id="secondaryCta" class="btn btn-dark" href="#socials">SÍGUEME <b>→</b></a>
           <a id="tertiaryCta" class="btn btn-glass hidden" href="#featured">DESTACADO <b>↗</b></a>
+          <a id="sponsorCta" class="btn btn-sponsor-pulse sponsor-floating-trigger" href="#sponsors" data-open-sponsors>CANJES + PATROCINIOS <b>✦</b></a>
         </div>
         <div class="hero-stack reveal">
           <a id="telegramCta" class="hero-bar hero-telegram" href="#" target="_blank" rel="noopener noreferrer">
@@ -60,6 +61,17 @@
     </section>
 
     <section id="tickerSection" class="ticker" aria-label="Highlights"><div class="ticker-track" id="tickerTrack"></div></section>
+
+    <section id="homeSponsorStrip" class="home-sponsor-strip hidden-section" aria-label="Patrocinadores principales">
+      <div class="home-sponsor-inner">
+        <div class="home-sponsor-copy">
+          <span>✦ PATROCINADORES</span>
+          <b>ALIADOS DEL STREAM</b>
+        </div>
+        <div id="homeSponsorLogos" class="home-sponsor-logos"></div>
+        <button id="homeSponsorOpen" class="home-sponsor-open" type="button" data-open-sponsors>VER CANJES</button>
+      </div>
+    </section>
 
     <div id="dynamicSections">
       <section id="liveSection" class="section page-section" data-section="live">
@@ -154,6 +166,38 @@
         </div>
       </section>
 
+      <section id="sponsors" class="section page-section sponsors-section" data-section="sponsors">
+        <div class="sponsors-shell reveal">
+          <div class="sponsors-head">
+            <div>
+              <div class="section-badge sponsor-badge"><span id="sponsorsTag">08 / CANJES</span></div>
+              <h2 class="display-title section-display sponsors-display"><span id="sponsorsTitle1" class="white">CANJES +</span><span id="sponsorsTitle2">PATROCINADORES.</span></h2>
+              <p id="sponsorsIntro" class="section-copy sponsors-intro"></p>
+            </div>
+            <a id="sponsorsBackBtn" class="btn btn-outline sponsors-back" href="#top">VOLVER AL INICIO</a>
+          </div>
+
+          <div class="sponsor-vip-panel">
+            <div class="sponsor-panel-title"><span>✦</span><h3 id="sponsorsVipTitle">PATROCINADORES VIP</h3></div>
+            <div id="sponsorVipGrid" class="sponsor-vip-grid"></div>
+          </div>
+
+          <div class="sponsor-deals-block">
+            <div class="sponsor-panel-title"><span>↯</span><h3 id="sponsorsDealsTitle">CANJES ACTIVOS</h3></div>
+            <div class="sponsor-deals-shell">
+              <button id="prevSponsorDeal" class="rail-arrow rail-arrow-left sponsor-arrow" type="button" aria-label="Canje anterior">←</button>
+              <div id="sponsorDealsTrack" class="sponsor-deals-track"></div>
+              <button id="nextSponsorDeal" class="rail-arrow rail-arrow-right sponsor-arrow" type="button" aria-label="Canje siguiente">→</button>
+            </div>
+          </div>
+
+          <div class="sponsor-partners-panel">
+            <div class="sponsor-panel-title mini"><span>•</span><h3 id="sponsorsPartnersTitle">PATROCINADORES</h3></div>
+            <div id="sponsorPartnersGrid" class="sponsor-partners-grid"></div>
+          </div>
+        </div>
+      </section>
+
       <section id="about" class="section page-section" data-section="about">
         <div class="section-head reveal column-head">
           <div class="section-badge"><span id="aboutTag">SOBRE MÍ</span></div>
@@ -171,10 +215,10 @@
   <footer class="footer"><div class="brand footer-brand"><span id="footerBrandBase">CSM</span><span id="footerBrandAccent">NICO</span></div><div id="footerLinks" class="footer-links"></div><div class="footer-bottom"><span>© <span id="year"></span> <span id="copyrightBrand">CSMNICO</span></span><span>CENTRO DEL STREAMER</span></div></footer>
   <button class="floating-button" id="floatingButton" aria-label="Ir a redes"><span class="floating-x">×</span></button>
 
-  <script src="local-db.js?v=5.8.18"></script>
-  <script src="config.js?v=5.8.18"></script>
-  <script src="default-content.js?v=5.8.18"></script>
-  <script src="cloud.js?v=5.8.18"></script>
-  <script src="app.js?v=5.8.18"></script>
+  <script src="local-db.js?v=5.8.49"></script>
+  <script src="config.js?v=5.8.49"></script>
+  <script src="default-content.js?v=5.8.49"></script>
+  <script src="cloud.js?v=5.8.49"></script>
+  <script src="app.js?v=5.8.49"></script>
 </body>
 </html>

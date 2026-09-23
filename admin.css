@@ -160,3 +160,14 @@ button{touch-action:manipulation}
 #sectionEditor .section-style-grid input[type="range"]{height:27px!important;min-height:27px!important}
 @media(max-width:760px){#sectionEditor .section-row,#sectionEditor .section-row:not(.section-row-copy){grid-template-columns:20px minmax(0,1fr) 32px 32px 32px!important;padding:6px!important}#sectionEditor .section-row.section-row-copy{grid-template-columns:20px minmax(0,1fr) 32px 32px 32px 32px!important}#sectionEditor .section-style-grid{grid-template-columns:1fr 1fr!important}#sectionEditor .icon-btn{width:32px!important;height:32px!important;min-height:32px!important}}
 @media(max-width:420px){#sectionEditor .section-row,#sectionEditor .section-row:not(.section-row-copy),#sectionEditor .section-row.section-row-copy{grid-template-columns:20px minmax(0,1fr) 32px 32px!important}#sectionEditor .section-style-grid{grid-template-columns:1fr!important}}
+
+/* V5.8.19 - Admin Canjes */
+.sponsor-admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;padding:12px 14px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:rgba(255,255,255,.035)}
+.sponsor-admin-head h3{margin:0;font:900 18px/1 Anton,sans-serif;letter-spacing:.05em;text-transform:uppercase}
+#sponsorsEditor .subcard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){#sponsorsEditor .subcard-grid{grid-template-columns:1fr}.sponsor-admin-head{position:sticky;top:0;z-index:3;background:#09090d}}
+
+/* V5.8.23 - editor compacto para sesiones de canjes */
+#sponsorsEditor .sponsor-admin-compact .subcard-grid{grid-template-columns:1fr 1fr;gap:10px;}
+#sponsorsEditor input[type="color"]{height:42px;padding:4px;border-radius:12px;cursor:pointer;}
+@media(max-width:760px){#sponsorsEditor .sponsor-admin-compact .subcard-grid{grid-template-columns:1fr;}#sponsorsEditor .sponsor-admin-head{position:sticky;top:0;z-index:2;background:rgba(7,7,10,.82);backdrop-filter:blur(10px);padding:10px 0;}}

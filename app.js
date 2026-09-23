@@ -2,8 +2,8 @@ const LIVE_KEY = "streamerHubConfig_v2";
 const PREVIEW_KEY = "streamerHubPreview_v2";
 
 const clone = value => JSON.parse(JSON.stringify(value));
-const SECTION_TYPES = ["live","socials","culture","featured","clips","upcoming","announcements","about","custom"];
-const SECTION_DEFAULT_NAMES = { live:"Kick / En vivo", socials:"Redes", culture:"Instagram / Cultura", featured:"Carrusel", clips:"Clips", upcoming:"Próximo stream", announcements:"Anuncio", about:"Sobre mí", custom:"Extra" };
+const SECTION_TYPES = ["live","socials","culture","featured","clips","upcoming","announcements","sponsors","about","custom"];
+const SECTION_DEFAULT_NAMES = { live:"Kick / En vivo", socials:"Redes", culture:"Instagram / Cultura", featured:"Carrusel", clips:"Clips", upcoming:"Próximo stream", announcements:"Anuncio", sponsors:"Canjes / Patrocinadores", about:"Sobre mí", custom:"Extra" };
 function normalizeSectionItems(c) {
   let items = Array.isArray(c.sectionItems) ? c.sectionItems : [];
   if (!items.length) {
@@ -94,6 +94,11 @@ function normalizeConfig(custom) {
   if (!c.culture || typeof c.culture !== "object") c.culture = clone(defaults.culture || {});
   if (!Array.isArray(c.culture.items)) c.culture.items = [];
   if (!Array.isArray(c.announcements)) c.announcements = [];
+  if (!c.sponsors || typeof c.sponsors !== "object") c.sponsors = clone(defaults.sponsors || {});
+  if (!Array.isArray(c.sponsors.categories)) c.sponsors.categories = clone(defaults.sponsors?.categories || []);
+  if (!Array.isArray(c.sponsors.deals)) c.sponsors.deals = [];
+  if (!Array.isArray(c.sponsors.vip)) c.sponsors.vip = [];
+  if (!Array.isArray(c.sponsors.partners)) c.sponsors.partners = [];
   if (!hadAnnouncements && legacyAnnouncement && ["kicker","title","chip","text","cta","url","image"].some(k => legacyAnnouncement[k])) {
     c.announcements = [{ id:"notice_migrated", enabled:legacyAnnouncement.enabled !== false, kicker:legacyAnnouncement.kicker || "AVISO", title:legacyAnnouncement.title || "AVISO / NOVEDAD", chip:legacyAnnouncement.chip || "", text:legacyAnnouncement.text || "", cta:legacyAnnouncement.cta || "", url:legacyAnnouncement.url || "#", image:legacyAnnouncement.image || "" }];
   }
@@ -111,6 +116,11 @@ function normalizeConfig(custom) {
   c.announcement = c.announcement || { enabled:true };
   c.culture.text = cleanText(c.culture.text);
   c.announcements.forEach(x => { x.text = cleanText(x.text); if (x.enabled == null) x.enabled = true; });
+  c.sponsors.intro = cleanText(c.sponsors.intro);
+  c.sponsors.categories.forEach((x,i) => { if (x.enabled == null) x.enabled = true; if (!x.id) x.id = `cat_${i+1}`; if (!x.name) x.name = x.tag || `Sesión ${i+1}`; if (!x.accent) x.accent = c.theme?.primary || '#ff2db7'; x.description = cleanText(x.description); });
+  c.sponsors.deals.forEach(x => { x.description = cleanText(x.description); if (x.enabled == null) x.enabled = true; if (x.discountEnabled == null) x.discountEnabled = !!x.discountCode; if (!x.category) x.category = 'general'; if (!x.color && x.glow) x.color = x.glow; });
+  c.sponsors.vip.forEach(x => { if (x.enabled == null) x.enabled = true; });
+  c.sponsors.partners.forEach(x => { if (x.enabled == null) x.enabled = true; });
   c.featured.forEach(x => x.subtitle = cleanText(x.subtitle));
   c.clips.forEach(x => x.subtitle = cleanText(x.subtitle));
   c.customSections.forEach(x => x.text = cleanText(x.text));
@@ -136,6 +146,15 @@ function safeLink(value, fallback = "#") {
   } catch {
     return fallback;
   }
+}
+
+function sitePageHref(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "#";
+  const sponsorPage = document.body?.dataset?.page === "sponsors";
+  if (!sponsorPage && (raw === "#sponsors" || raw === "sponsors.html" || raw.endsWith("/sponsors.html"))) return "#sponsors";
+  if (sponsorPage && raw.startsWith("#")) return raw === "#top" ? "index.html" : `index.html${raw}`;
+  return raw;
 }
 
 function safeImage(value) {
@@ -188,6 +207,48 @@ function setLink(id, obj, suffix = "↗") {
   }
   el.href = safeLink(obj.url);
 }
+
+function sponsorsPageUrl() { return document.body?.dataset?.page === "sponsors" ? "index.html#top" : "#sponsors"; }
+
+function openSponsorsOverlay() {
+  if (document.body?.dataset?.page === "sponsors") return;
+  const sec = document.getElementById("sponsors");
+  if (!sec) return;
+  sec.classList.add("sponsors-open");
+  sec.classList.remove("hidden-section");
+  document.body.classList.add("sponsors-modal-open");
+  window.setTimeout(() => setupSponsorsCarousel(sec), 60);
+}
+
+function closeSponsorsOverlay() {
+  if (document.body?.dataset?.page === "sponsors") return;
+  const sec = document.getElementById("sponsors");
+  sec?.classList.remove("sponsors-open");
+  document.body.classList.remove("sponsors-modal-open");
+}
+
+function bindSponsorCtaPage() {
+  if (document.body?.dataset?.page === "sponsors") return;
+  const selectors = ['#sponsorCta','[data-open-sponsors]','a[href="#sponsors"]','a[href="sponsors.html"]','a[href$="/sponsors.html"]'];
+  document.querySelectorAll(selectors.join(',')).forEach(btn => {
+    btn.setAttribute('href', '#sponsors');
+    btn.removeAttribute('target');
+    btn.removeAttribute('rel');
+    btn.onclick = ev => { ev.preventDefault(); openSponsorsOverlay(); };
+  });
+  const back = document.getElementById('sponsorsBackBtn');
+  if (back) {
+    back.setAttribute('href', '#top');
+    back.onclick = ev => { ev.preventDefault(); closeSponsorsOverlay(); };
+  }
+  const sec = document.getElementById('sponsors');
+  if (sec && !sec.dataset.overlayBound) {
+    sec.dataset.overlayBound = '1';
+    sec.addEventListener('click', ev => { if (ev.target === sec) closeSponsorsOverlay(); });
+  }
+}
+
+window.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeSponsorsOverlay(); });
 
 function setIconLink(id, labelId, obj, suffix = "↗") {
   const el = document.getElementById(id);
@@ -362,20 +423,23 @@ function renderTicker(c) {
 
 function renderNav(c) {
   const nav = document.getElementById("desktopNav");
+  if (!nav) return;
   nav.innerHTML = "";
   (c.navLinks || []).filter(x => x.enabled !== false).forEach(item => {
     const a = document.createElement("a");
-    a.href = safeLink(item.target);
+    a.href = safeLink(sitePageHref(item.target));
     a.textContent = item.label || "ENLACE";
     nav.appendChild(a);
   });
+  bindSponsorCtaPage();
 }
 
 let lazyBgObserver = null;
 function setBackgroundImage(el, value, critical = false) {
   if (!el) return;
   const safe = safeImage(value);
-  if (!safe) { el.style.backgroundImage = ""; return; }
+  el.classList.toggle('is-png-media', isPngLike(safe));
+  if (!safe) { el.style.backgroundImage = ""; delete el.dataset.lazyBg; return; }
   const css = `url("${safe.replaceAll('"','%22')}")`;
   if (critical || !("IntersectionObserver" in window)) { el.style.backgroundImage = css; return; }
   if (!lazyBgObserver) lazyBgObserver = new IntersectionObserver(entries => {
@@ -444,9 +508,14 @@ function renderSocials(c) {
   });
 }
 
+function isPngLike(url) {
+  const raw = String(url || '').toLowerCase();
+  return !!raw && (/\.png(?:[?#].*)?$/i.test(raw) || /^data:image\/png/i.test(raw) || raw.includes('#png') || raw.includes('transparent=1') || raw.includes('png=true'));
+}
 function makeBackground(url, className = "media-bg") {
   const div = document.createElement("div");
   div.className = className;
+  if (isPngLike(url)) div.classList.add('is-png-media');
   setBackgroundImage(div, url);
   return div;
 }
@@ -618,6 +687,84 @@ function renderClips(c) {
   });
 }
 
+
+function sponsorLogoNode(item, cls='sponsor-logo') {
+  const logo = safeImage(item.logo || item.image || '');
+  const box = document.createElement('div');
+  box.className = cls;
+  const isPng = isPngLike(logo);
+  box.classList.add(isPng ? 'is-png-logo' : 'is-photo-logo');
+  if (logo) {
+    box.classList.add('has-image');
+    const img = document.createElement('img');
+    img.src = logo; img.loading = 'lazy'; img.decoding = 'async'; img.alt = item.name || 'Patrocinador';
+    box.appendChild(img);
+  } else {
+    box.textContent = String(item.name || 'LOGO').slice(0, 10);
+  }
+  return box;
+}
+function sponsorDealCard(item, i) {
+  const a = document.createElement('a');
+  a.className = 'sponsor-deal-card reveal';
+  a.href = safeLink(item.url); a.target = '_blank'; a.rel = 'noopener noreferrer';
+  a.style.setProperty('--sponsor-accent', safeColor(item.color || item.glow || '#ff2db7', '#ff2db7'));
+  const bg = safeImage(item.image);
+  if (bg) a.appendChild(makeBackground(bg, 'sponsor-card-bg'));
+  const top = document.createElement('div'); top.className = 'sponsor-card-top';
+  top.appendChild(sponsorLogoNode(item));
+  const chips = document.createElement('div'); chips.className = 'sponsor-chips';
+  [item.tag || 'CANJE', item.tier || 'ALIADO'].filter(Boolean).slice(0,2).forEach(t => { const s=document.createElement('span'); s.textContent=t; chips.appendChild(s); });
+  top.appendChild(chips);
+  const body = document.createElement('div'); body.className = 'sponsor-card-body';
+  const name = document.createElement('p'); name.className='sponsor-name'; name.textContent=item.name || `ALIADO ${i+1}`;
+  const title = document.createElement('h3'); title.textContent=item.title || item.name || 'CANJE ACTIVO';
+  body.append(name,title);
+  const desc = cleanText(item.description); if(desc){ const p=document.createElement('p'); p.textContent=desc; body.appendChild(p); }
+  if(item.discountEnabled !== false && cleanText(item.discountCode)){
+    const code=document.createElement('div'); code.className='sponsor-code';
+    code.innerHTML=`<span>${escapeHtml(item.discountLabel || 'CÓDIGO')}</span><b>${escapeHtml(item.discountCode)}</b>`;
+    body.appendChild(code);
+  }
+  const go=document.createElement('span'); go.className='circle-btn sponsor-go text-badge'; go.innerHTML='<span class="go-text">IR</span>';
+  a.append(top, body, go);
+  return a;
+}
+function renderHomeSponsorStrip(c) {
+  const strip = document.getElementById('homeSponsorStrip');
+  const logos = document.getElementById('homeSponsorLogos');
+  if (!strip || !logos) return;
+  logos.innerHTML = '';
+  const s = c.sponsors || {};
+  const items = [...(s.vip || []), ...(s.partners || [])].filter(x => x && x.enabled !== false).slice(0, 18);
+  strip.classList.toggle('hidden-section', s.enabled === false || !items.length);
+  const auto = items.length > 1 && s.homeAuto !== false;
+  logos.classList.toggle('is-auto', auto);
+  logos.style.setProperty('--home-sponsor-speed', `${Math.max(26, Number(s.homeSpeed || 28))}s`);
+  // Marquee sin huecos: grupo largo duplicado exactamente.
+  const groupLen = auto ? Math.max(18, items.length) : items.length;
+  const baseGroup = Array.from({length: groupLen}, (_, i) => items[i % items.length]);
+  const displayItems = auto ? [...baseGroup, ...baseGroup] : baseGroup;
+  displayItems.forEach((item, i) => {
+    const a = document.createElement('a');
+    a.className = 'home-sponsor-logo';
+    a.href = safeLink(item.url);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = item.name || 'Patrocinador';
+    if (auto && i >= baseGroup.length) a.setAttribute('aria-hidden','true');
+    a.appendChild(sponsorLogoNode(item, 'home-sponsor-logo-box'));
+    logos.appendChild(a);
+  });
+}
+
+function renderSponsors(c) {
+  const root = document.getElementById('sponsors');
+  if (root) renderSponsorsInto(root, c);
+  renderHomeSponsorStrip(c);
+  bindSponsorCtaPage();
+}
+
 function renderCustomSections(c) {
   const container = document.getElementById("customSections");
   container.innerHTML = "";
@@ -634,6 +781,7 @@ function renderCustomSections(c) {
 
     const inner = document.createElement("div");
     inner.className = `custom-inner ${item.image ? "with-image" : ""}`;
+    if (item.image && isPngLike(item.image)) inner.classList.add('png-custom');
     const copy = document.createElement("div");
     copy.className = "custom-copy";
     copy.innerHTML = `<div class="section-badge"><span>${escapeHtml(item.kicker || "NUEVA SECCIÓN")}</span></div><h2 class="display-title section-display"><span class="white">${escapeHtml(item.title1 || "NUEVO")}</span><span>${escapeHtml(item.title2 || "BLOQUE.")}</span></h2>`;
@@ -759,6 +907,11 @@ function sectionInstanceVisible(c, item) {
     const hasNotices = list.some(x => x && x.enabled !== false);
     if (ann.enabled === false || !hasNotices) return false;
   }
+  if (item.type === 'sponsors') {
+    const src = isClone ? (item.data?.sponsors || {}) : (c.sponsors || {});
+    const hasAny = (src.deals || []).some(x => x && x.enabled !== false) || (src.vip || []).some(x => x && x.enabled !== false) || (src.partners || []).some(x => x && x.enabled !== false);
+    if (src.enabled === false || !hasAny) return false;
+  }
   if (item.type === 'custom') {
     const list = isClone ? (Array.isArray(item.data?.customSections) ? item.data.customSections : []) : (Array.isArray(c.customSections) ? c.customSections : []);
     const hasCustom = list.some(x => x && x.enabled !== false);
@@ -808,6 +961,33 @@ function scopedEl(root, id) {
 function setScopedText(root, idPrefix, value) {
   const el = scopedEl(root, idPrefix);
   if (el) el.textContent = value ?? "";
+}
+function setSponsorPanelTitle(root, idPrefix, value, fallback = '') {
+  const el = scopedEl(root, idPrefix);
+  if (!el) return;
+  el.classList.add('panel-title-stack','panel-title-unified');
+  const text = String(value || fallback || '').trim();
+  const parts = text.split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) {
+    el.innerHTML = `<span class="title-main"><span class="title-white">${escapeHtml(text || fallback || '')}</span></span>`;
+    return;
+  }
+  const first = parts.shift() || '';
+  const second = parts.join(' ');
+  el.innerHTML = `<span class="title-main"><span class="title-white">${escapeHtml(first)}</span>${second ? `<span class="title-neon">${escapeHtml(second)}</span>` : ''}</span>`;
+}
+function setSponsorStackTitle(root, idPrefix, kicker = '', main = '', accent = '') {
+  const el = scopedEl(root, idPrefix);
+  if (!el) return;
+  const kick = String(kicker || '').trim();
+  const base = String(main || '').trim();
+  const accentText = String(accent || '').trim();
+  const mainHtml = [
+    base ? `<span class="title-white">${escapeHtml(base)}</span>` : '',
+    accentText ? `<span class="title-neon">${escapeHtml(accentText)}</span>` : ''
+  ].filter(Boolean).join(' ');
+  el.classList.add('panel-title-stack');
+  el.innerHTML = `${kick ? `<span class="title-kicker">${escapeHtml(kick)}</span>` : ''}<span class="title-main">${mainHtml || `<span class="title-white">&nbsp;</span>`}</span>`;
 }
 function setScopedOptionalText(root, idPrefix, value) {
   const el = scopedEl(root, idPrefix);
@@ -876,6 +1056,7 @@ function mergedConfigForItem(c,item){
     if(item.type==='clips') out.clips = Array.isArray(d.clips) ? d.clips : [];
     if(item.type==='socials') out.socials = Array.isArray(d.socials) ? d.socials : [];
     if(item.type==='custom') out.customSections = Array.isArray(d.customSections) ? d.customSections : [];
+    if(item.type==='sponsors') out.sponsors = d.sponsors && typeof d.sponsors === 'object' ? d.sponsors : {deals:[],vip:[],partners:[]};
     if(item.type==='culture') out.culture = d.culture && typeof d.culture === 'object' ? d.culture : {items:[]};
   }
   return out;
@@ -913,7 +1094,7 @@ function renderFeaturedInto(root, cfg){
   });
 }
 function renderClipsInto(root,cfg){const grid=root.querySelector('[id^="clipsGrid"],.clips-grid');if(!grid)return;grid.innerHTML='';const h=cfg.sectionHeaders?.clips||{};setScopedText(root,'clipsTag',h.tag||'');setScopedText(root,'clipsTitle1',h.title1||'');setScopedText(root,'clipsTitle2',h.title2||'');(cfg.clips||[]).filter(x=>x.enabled!==false).forEach(item=>{const a=document.createElement('a');a.className='clip-card reveal in';a.href=safeLink(item.url);a.target='_blank';a.rel='noopener noreferrer';a.appendChild(makeBackground(item.image));const play=document.createElement('div');play.className='play';play.innerHTML='<span class="play-triangle"></span>';const copy=document.createElement('div');copy.className='clip-copy';const h3=document.createElement('h3');h3.textContent=item.title||'CLIP';copy.appendChild(h3);const subtitle=cleanText(item.subtitle);if(subtitle){const p=document.createElement('p');p.textContent=subtitle;copy.appendChild(p)}const go=document.createElement('span');go.className='circle-btn clip-go text-badge';go.innerHTML='<span class="go-text">IR</span>';a.append(play,copy,go);grid.appendChild(a)})}
-function renderCustomInto(root,cfg){const box=root.querySelector('[id^="customSections"]')||root;box.innerHTML='';const active=(cfg.customSections||[]).filter(s=>s.enabled!==false);const shell=document.createElement('div');shell.className='custom-carousel-shell';shell.innerHTML='<button class="rail-arrow rail-arrow-left custom-arrow" type="button" aria-label="Extra anterior">←</button><div class="custom-track"></div><button class="rail-arrow rail-arrow-right custom-arrow" type="button" aria-label="Extra siguiente">→</button>';const track=shell.querySelector('.custom-track');active.forEach((item,i)=>{const wrap=document.createElement('section');wrap.className='custom-block custom-card reveal in';wrap.id=item.anchorId||`custom-${i+1}`;const inner=document.createElement('div');inner.className=`custom-inner ${item.image?'with-image':''}`;const copy=document.createElement('div');copy.className='custom-copy';copy.innerHTML=`<div class="section-badge"><span>${escapeHtml(item.kicker||'NUEVA SECCIÓN')}</span></div><h2 class="display-title section-display"><span class="white">${escapeHtml(item.title1||'NUEVO')}</span><span>${escapeHtml(item.title2||'BLOQUE.')}</span></h2>`;const text=cleanText(item.text);if(text){const p=document.createElement('p');p.className='section-copy';p.textContent=text;copy.appendChild(p)}if(item.ctaEnabled!==false&&item.ctaLabel){const a=document.createElement('a');a.className='btn btn-outline';a.href=safeLink(item.ctaUrl);a.target='_blank';a.rel='noopener noreferrer';a.innerHTML=`${escapeHtml(item.ctaLabel)} <b>IR</b>`;copy.appendChild(a)}inner.appendChild(copy);if(item.image){const media=document.createElement('div');media.className='custom-media';media.appendChild(makeBackground(item.image,'custom-image'));inner.appendChild(media)}wrap.appendChild(inner);track.appendChild(wrap)});box.appendChild(shell);}
+function renderCustomInto(root,cfg){const box=root.querySelector('[id^="customSections"]')||root;box.innerHTML='';const active=(cfg.customSections||[]).filter(s=>s.enabled!==false);const shell=document.createElement('div');shell.className='custom-carousel-shell';shell.innerHTML='<button class="rail-arrow rail-arrow-left custom-arrow" type="button" aria-label="Extra anterior">←</button><div class="custom-track"></div><button class="rail-arrow rail-arrow-right custom-arrow" type="button" aria-label="Extra siguiente">→</button>';const track=shell.querySelector('.custom-track');active.forEach((item,i)=>{const wrap=document.createElement('section');wrap.className='custom-block custom-card reveal in';wrap.id=item.anchorId||`custom-${i+1}`;const inner=document.createElement('div');inner.className=`custom-inner ${item.image?'with-image':''}`; if (item.image && isPngLike(item.image)) inner.classList.add('png-custom');const copy=document.createElement('div');copy.className='custom-copy';copy.innerHTML=`<div class="section-badge"><span>${escapeHtml(item.kicker||'NUEVA SECCIÓN')}</span></div><h2 class="display-title section-display"><span class="white">${escapeHtml(item.title1||'NUEVO')}</span><span>${escapeHtml(item.title2||'BLOQUE.')}</span></h2>`;const text=cleanText(item.text);if(text){const p=document.createElement('p');p.className='section-copy';p.textContent=text;copy.appendChild(p)}if(item.ctaEnabled!==false&&item.ctaLabel){const a=document.createElement('a');a.className='btn btn-outline';a.href=safeLink(item.ctaUrl);a.target='_blank';a.rel='noopener noreferrer';a.innerHTML=`${escapeHtml(item.ctaLabel)} <b>IR</b>`;copy.appendChild(a)}inner.appendChild(copy);if(item.image){const media=document.createElement('div');media.className='custom-media';media.appendChild(makeBackground(item.image,'custom-image'));inner.appendChild(media)}wrap.appendChild(inner);track.appendChild(wrap)});box.appendChild(shell);}
 
 function renderUpcomingInto(root,cfg){
   const h=cfg.sectionHeaders?.upcoming||{};setScopedText(root,'upcomingTag',h.tag||'');setScopedText(root,'upcomingTitle1',h.title1||'');setScopedText(root,'upcomingTitle2',h.title2||'');setScopedOptionalText(root,'nextStreamTitle',cfg.nextStreamTitle);setScopedOptionalText(root,'nextStreamText',cfg.nextStreamText);const imgUrl=safeImage(cfg.nextStreamImage);const img=scopedEl(root,'nextStreamImage');const box=scopedEl(root,'nextStreamImageBox');const card=scopedEl(root,'upcomingCard');if(img)setBackgroundImage(img,imgUrl);box?.classList.toggle('no-image',!imgUrl);card?.classList.toggle('with-image',!!imgUrl);
@@ -927,9 +1108,345 @@ function renderAnnouncementsInto(root,cfg){
   const track=root.querySelector('[id^="noticesTrack"],.notices-track');if(!track)return;track.innerHTML='';
   (cfg.announcements||[]).filter(x=>x&&x.enabled!==false).slice(0,12).forEach((notice,index)=>{const card=document.createElement('article');card.className='notice-card notice-carousel-card reveal in';card.dataset.noticeId=notice.id||String(index);const image=safeImage(notice.image);if(image){const media=document.createElement('div');media.className='notice-media';const img=document.createElement('img');img.src=image;img.alt=notice.title||'Aviso';img.loading='lazy';img.decoding='async';media.appendChild(img);card.appendChild(media);const toggle=document.createElement('button');toggle.type='button';toggle.className='notice-toggle';toggle.setAttribute('aria-expanded','false');toggle.innerHTML='Ver foto completa <span>⌄</span>';toggle.onclick=()=>{const expanded=card.classList.toggle('expanded');toggle.setAttribute('aria-expanded',expanded?'true':'false');toggle.innerHTML=expanded?'Ocultar foto <span>⌃</span>':'Ver foto completa <span>⌄</span>';};card.appendChild(toggle)}const content=document.createElement('div');content.className='notice-content';const kicker=cleanText(cloneMode?(notice.kicker??''):(notice.kicker||'AVISO'));if(kicker){const el=document.createElement('div');el.className='notice-kicker';el.textContent=kicker;content.appendChild(el)}const title=cloneMode?(notice.title??''):(notice.title||'AVISO / NOVEDAD');if(cleanText(title)){const h3=document.createElement('h3');h3.textContent=title;content.appendChild(h3)}const chip=cleanText(notice.chip);if(chip){const place=document.createElement('div');place.className='notice-place';place.textContent=chip;content.appendChild(place)}const text=cleanText(notice.text);if(text){const p=document.createElement('p');p.textContent=text;content.appendChild(p)}const cta=cleanText(notice.cta);const url=String(notice.url||'').trim();if(cta&&url&&url!=='#'){const a=document.createElement('a');a.className='notice-button';a.href=safeLink(url);a.target='_blank';a.rel='noopener noreferrer';a.textContent=cta;content.appendChild(a)}card.appendChild(content);track.appendChild(card)});root.classList.toggle('no-notices',!track.children.length);
 }
-function renderAboutInto(root,cfg){
-  const h=cfg.sectionHeaders?.about||{};setScopedText(root,'aboutTag',h.tag||'');setScopedText(root,'aboutTitle1',h.title1||'');setScopedText(root,'aboutTitle2',h.title2||'');setScopedOptionalText(root,'aboutTitle',cfg.about?.title);setScopedOptionalText(root,'aboutText',cfg.about?.text);
+
+function sponsorCategoryKey(value) {
+  return String(value || 'general').trim() || 'general';
 }
+function sponsorCategoryName(cat, fallback) {
+  return cleanText(cat?.name) || cleanText(cat?.tag) || fallback || 'Otros canjes';
+}
+function sponsorCategoryTag(cat) {
+  return cleanText(cat?.tag) || 'SESIÓN';
+}
+function renderSponsorCategoryGroup(parent, cat, items, index) {
+  const accent = safeColor(cat?.accent || cat?.color || items[0]?.color || items[0]?.glow || '#ff2db7', '#ff2db7');
+  const group = document.createElement('section');
+  group.className = 'sponsor-category-group reveal in';
+  group.style.setProperty('--sponsor-category-color', accent);
+  group.dataset.category = sponsorCategoryKey(cat?.id || cat?.name || index);
+
+  const head = document.createElement('div');
+  head.className = 'sponsor-category-head';
+  const copy = document.createElement('div');
+  const badge = document.createElement('span');
+  badge.className = 'sponsor-category-badge';
+  badge.textContent = sponsorCategoryTag(cat);
+  const h4 = document.createElement('h4');
+  h4.textContent = sponsorCategoryName(cat, `Canjes ${index + 1}`);
+  copy.append(badge, h4);
+  const desc = cleanText(cat?.description);
+  if (desc) {
+    const p = document.createElement('p');
+    p.textContent = desc;
+    copy.appendChild(p);
+  }
+  const count = document.createElement('b');
+  count.className = 'sponsor-category-count';
+  count.textContent = `${items.length} ${items.length === 1 ? 'CANJE' : 'CANJES'}`;
+  head.append(copy, count);
+
+  const shell = document.createElement('div');
+  shell.className = 'sponsor-category-shell';
+  const prev = document.createElement('button');
+  prev.className = 'rail-arrow rail-arrow-left sponsor-category-arrow';
+  prev.type = 'button';
+  prev.setAttribute('aria-label', 'Canje anterior');
+  prev.textContent = '←';
+  const track = document.createElement('div');
+  track.className = 'sponsor-category-track';
+  if (items.length === 1) track.classList.add('is-single');
+  items.forEach((item, i) => { const card = sponsorDealCard(item, i); if (i === 0) card.classList.add('is-active'); track.appendChild(card); });
+  const next = document.createElement('button');
+  next.className = 'rail-arrow rail-arrow-right sponsor-category-arrow';
+  next.type = 'button';
+  next.setAttribute('aria-label', 'Canje siguiente');
+  next.textContent = '→';
+  shell.append(prev, track, next);
+  group.append(head, shell);
+  parent.appendChild(group);
+}
+
+function setupSponsorTrackInteractions(root, settings = {}){
+  const tracks = [...root.querySelectorAll('.sponsor-category-track, .sponsor-vip-grid.is-carousel, .sponsor-partners-grid.is-carousel')];
+  tracks.forEach(track => {
+    clearInterval(track._sponsorTimer);
+    if (track._resizeHandler) window.removeEventListener('resize', track._resizeHandler);
+
+    const cards = () => [...track.children].filter(el => el.classList.contains('sponsor-deal-card') || el.classList.contains('sponsor-vip-logo') || el.classList.contains('sponsor-partner-logo'));
+    const shell = track.closest('.sponsor-category-shell') || track.closest('.sponsor-vip-wrap') || track.closest('.sponsor-partner-wrap') || track.parentElement;
+    const left = shell?.querySelector(':scope > .rail-arrow-left');
+    const right = shell?.querySelector(':scope > .rail-arrow-right');
+
+    const getMode = () => {
+      if (track.classList.contains('sponsor-category-track')) return {auto: settings.dealsAuto !== false, speed:Math.max(8, Number(settings.dealsSpeed || 18))};
+      if (track.classList.contains('sponsor-vip-grid')) return {auto: settings.vipAuto !== false, speed:Math.max(8, Number(settings.vipSpeed || 18))};
+      if (track.classList.contains('sponsor-partners-grid')) return {auto: settings.partnersAuto !== false, speed:Math.max(8, Number(settings.partnersSpeed || 20))};
+      return {auto:false,speed:12};
+    };
+
+    // Siempre iniciar cada carrusel desde el primer elemento al renderizar.
+    // Antes se reutilizaba dataset.sponsorIndex y por eso VIP podía aparecer seleccionado al costado.
+    track.dataset.sponsorIndex = '0';
+    let index = 0;
+
+    const setSidePadding = () => {
+      const list = cards();
+      if (!list.length) return;
+      const card = list[index] || list[0];
+      const cardWidth = card.getBoundingClientRect().width || card.offsetWidth || 0;
+      const pad = Math.max(0, (track.clientWidth - cardWidth) / 2);
+      track.style.setProperty('padding-left', `${pad}px`, 'important');
+      track.style.setProperty('padding-right', `${pad}px`, 'important');
+    };
+
+    const updateStateOnly = () => {
+      const list = cards();
+      if (!list.length) return;
+      index = ((index % list.length) + list.length) % list.length;
+      track.dataset.sponsorIndex = String(index);
+      list.forEach((card,i) => {
+        const raw = Math.abs(i-index);
+        const circularNeighbor = list.length > 2 && raw === list.length - 1;
+        card.classList.toggle('is-active', i === index);
+        card.classList.toggle('is-neighbor', raw === 1 || circularNeighbor);
+      });
+    };
+
+    const centerCurrent = (behavior='smooth') => {
+      const list = cards();
+      if (!list.length) return;
+      const card = list[index] || list[0];
+      setSidePadding();
+      // Forzar reflow para que el padding lateral aplicado por JS cuente antes de calcular el centro.
+      void track.offsetWidth;
+      const max = Math.max(0, track.scrollWidth - track.clientWidth);
+      const target = Math.max(0, Math.min(max, card.offsetLeft + (card.offsetWidth / 2) - (track.clientWidth / 2)));
+      try { track.scrollTo({ left: target, behavior }); }
+      catch { track.scrollLeft = target; }
+    };
+
+    const update = (next=index, behavior='smooth') => {
+      const list = cards();
+      if (!list.length) return;
+      index = ((next % list.length) + list.length) % list.length;
+      updateStateOnly();
+      requestAnimationFrame(() => requestAnimationFrame(() => centerCurrent(behavior)));
+    };
+
+    const bindCardClicks = () => {
+      const list = cards();
+      list.forEach((card, cardIndex) => {
+        if (card.dataset.sponsorSelectBound === '1') return;
+        card.dataset.sponsorSelectBound = '1';
+        card.addEventListener('click', ev => {
+          const current = Number(track.dataset.sponsorIndex || 0);
+          if (cardIndex !== current) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            clearInterval(track._sponsorTimer);
+            update(cardIndex);
+            startAuto();
+          }
+        });
+        const imgs = [...card.querySelectorAll('img')];
+        imgs.forEach(img => {
+          if (img.dataset.sponsorCenterBound === '1') return;
+          img.dataset.sponsorCenterBound = '1';
+          img.addEventListener('load', () => {
+            window.setTimeout(() => centerCurrent('auto'), 30);
+          }, { once:false });
+        });
+      });
+    };
+
+    const mode = getMode();
+    const canMove = cards().length > 1;
+    const useAuto = !!mode.auto && canMove;
+    shell?.classList.toggle('sponsor-auto-mode', useAuto);
+    shell?.classList.toggle('sponsor-arrow-mode', !useAuto && canMove);
+    shell?.classList.toggle('is-single', !canMove);
+
+    if (left) left.onclick = e => { e.preventDefault(); e.stopPropagation(); clearInterval(track._sponsorTimer); update(index - 1); };
+    if (right) right.onclick = e => { e.preventDefault(); e.stopPropagation(); clearInterval(track._sponsorTimer); update(index + 1); };
+
+    let downX = 0;
+    track.onpointerdown = e => { downX = e.clientX || 0; clearInterval(track._sponsorTimer); };
+    track.onpointerup = e => {
+      const dx = (e.clientX || 0) - downX;
+      if (Math.abs(dx) > 38) update(index + (dx < 0 ? 1 : -1));
+      startAuto();
+    };
+    bindCardClicks();
+    track.onmouseenter = () => clearInterval(track._sponsorTimer);
+    track.onmouseleave = () => startAuto();
+
+    const startAuto = () => {
+      clearInterval(track._sponsorTimer);
+      if (!useAuto) return;
+      track._sponsorTimer = setInterval(()=>update(index + 1), Math.max(8, Number(mode.speed || 12))*1000);
+    };
+
+    track._resizeHandler = () => {
+      setSidePadding();
+      window.setTimeout(()=>centerCurrent('auto'), 60);
+    };
+    window.addEventListener('resize', track._resizeHandler);
+
+    track.scrollLeft = 0;
+    update(0, 'auto');
+    window.setTimeout(()=>{ track.scrollLeft = 0; update(0, 'auto'); startAuto(); }, 180);
+  });
+}
+
+function renderSponsorsInto(root,cfg){
+  const s = cfg.sponsors || {};
+  root.style.setProperty('--sponsor-vip-accent', safeColor(s.vipAccent || s.themeColor || '#ff2db7', '#ff2db7'));
+  root.style.setProperty('--sponsor-partner-accent', safeColor(s.partnerAccent || s.vipAccent || s.themeColor || '#ff2db7', '#ff2db7'));
+  root.style.setProperty('--sponsor-logo-bg', safeColor(s.logoBackplate || '#171018', '#171018'));
+  const header = cfg.sectionHeaders?.sponsors || {};
+  setScopedText(root,'sponsorsTag',header.tag || 'CANJES');
+  setScopedText(root,'sponsorsTitle1',header.title1 || 'CANJES +');
+  setScopedText(root,'sponsorsTitle2',header.title2 || 'PATROCINADORES.');
+  setScopedOptionalText(root,'sponsorsIntro',s.intro || '');
+  const dealsTitle = s.dealsTitle || 'CANJES ACTIVOS';
+  setSponsorPanelTitle(root,'sponsorsDealsTitle',dealsTitle,'CANJES ACTIVOS');
+  // Nuevo formato estético para VIP: arriba el subtítulo y abajo el título principal.
+  setSponsorStackTitle(root,'sponsorsVipTitle','SOCIOS DEL STREAM','PATROCINIOS','VIPS');
+  // Este título debe ser igual al del home: PATROCINADORES / ALIADOS DEL STREAM.
+  setSponsorStackTitle(root,'sponsorsPartnersTitle','PATROCINADORES','ALIADOS DEL STREAM','');
+  // Los símbolos decorativos se eliminan sin tocar los spans internos del título.
+  root.querySelector('.sponsor-deals-block .sponsor-panel-title > span')?.replaceChildren();
+  root.querySelector('.sponsor-vip-panel .sponsor-panel-title > span')?.replaceChildren();
+  root.querySelector('.sponsor-partners-panel .sponsor-panel-title > span')?.replaceChildren();
+  const back = scopedEl(root,'sponsorsBackBtn'); if(back){ back.textContent=s.backLabel || 'VOLVER AL INICIO'; back.href=document.body?.dataset?.page==='sponsors'?'index.html#top':'#top'; }
+
+  const deals = (s.deals || []).filter(x => x && x.enabled !== false);
+  const categories = Array.isArray(s.categories) ? s.categories.filter(x => x && x.enabled !== false) : [];
+  const track = root.querySelector('[id^="sponsorDealsTrack"], .sponsor-deals-track');
+  if(track){
+    track.innerHTML='';
+    track.classList.add('sponsor-category-list');
+    const rendered = new Set();
+    categories.forEach((cat, i) => {
+      const key = sponsorCategoryKey(cat.id || cat.name);
+      const items = deals.filter(item => sponsorCategoryKey(item.category) === key || sponsorCategoryKey(item.categoryName) === key || String(item.category || '').trim().toLowerCase() === String(cat.name || '').trim().toLowerCase());
+      if (items.length) { rendered.add(key); renderSponsorCategoryGroup(track, cat, items, i); }
+    });
+    const others = deals.filter(item => {
+      const key = sponsorCategoryKey(item.category);
+      return !categories.some(cat => sponsorCategoryKey(cat.id || cat.name) === key || String(item.category || '').trim().toLowerCase() === String(cat.name || '').trim().toLowerCase());
+    });
+    if (others.length) renderSponsorCategoryGroup(track, {id:'general',name:'Otros canjes',tag:'GENERAL',accent:s.themeColor || '#ff2db7',description:'Canjes activos que todavía no tienen una sesión asignada.'}, others, categories.length);
+  }
+
+  const vipItems = (s.vip||[]).filter(x=>x&&x.enabled!==false);
+  const vip = root.querySelector('[id^="sponsorVipGrid"], .sponsor-vip-grid');
+  if(vip){
+    vip.innerHTML='';
+    vip.dataset.sponsorIndex = '0';
+    vip.classList.toggle('is-single', vipItems.length===1);
+    vip.classList.toggle('is-centered', vipItems.length>0);
+    vip.classList.toggle('is-carousel', vipItems.length>1);
+    if (!vip.parentElement?.classList.contains('sponsor-vip-wrap')) {
+      const wrap=document.createElement('div'); wrap.className='sponsor-vip-wrap sponsor-logo-carousel-wrap';
+      vip.parentNode.insertBefore(wrap, vip); wrap.appendChild(vip);
+      wrap.insertAdjacentHTML('afterbegin','<button class="rail-arrow rail-arrow-left sponsor-vip-arrow" type="button" aria-label="VIP anterior">←</button>');
+      wrap.insertAdjacentHTML('beforeend','<button class="rail-arrow rail-arrow-right sponsor-vip-arrow" type="button" aria-label="VIP siguiente">→</button>');
+    }
+    vip.parentElement?.classList.toggle('is-single', vipItems.length<=1);
+    vipItems.forEach((item,idx)=>{
+      const a=document.createElement('a');
+      a.className='sponsor-vip-logo' + (idx===0?' is-active':'');
+      a.href=safeLink(item.url); a.target='_blank'; a.rel='noopener noreferrer';
+      a.appendChild(sponsorLogoNode(item,'sponsor-vip-logo-box'));
+      const tag=document.createElement('span'); tag.textContent=item.tag||'VIP';
+      const name=document.createElement('b'); name.textContent=item.name||'VIP'; name.title=item.name||'VIP';
+      a.title=item.name||'VIP'; a.append(tag,name); vip.appendChild(a);
+    });
+  }
+  const partnerItems = (s.partners||[]).filter(x=>x&&x.enabled!==false);
+  const partners = root.querySelector('[id^="sponsorPartnersGrid"], .sponsor-partners-grid');
+  if(partners){
+    partners.innerHTML='';
+    partners.dataset.sponsorIndex = '0';
+    const partnerAuto = partnerItems.length > 1 && s.partnersAuto !== false;
+    partners.classList.toggle('is-single', partnerItems.length===1);
+    partners.classList.toggle('is-centered', partnerItems.length>0);
+    partners.classList.toggle('is-carousel', false);
+    partners.classList.toggle('is-marquee', partnerAuto);
+    if (!partners.parentElement?.classList.contains('sponsor-partner-wrap')) {
+      const wrap=document.createElement('div'); wrap.className='sponsor-partner-wrap sponsor-logo-carousel-wrap';
+      partners.parentNode.insertBefore(wrap, partners); wrap.appendChild(partners);
+      wrap.insertAdjacentHTML('afterbegin','<button class="rail-arrow rail-arrow-left sponsor-partner-arrow" type="button" aria-label="Patrocinador anterior">←</button>');
+      wrap.insertAdjacentHTML('beforeend','<button class="rail-arrow rail-arrow-right sponsor-partner-arrow" type="button" aria-label="Patrocinador siguiente">→</button>');
+    }
+    const wrap = partners.parentElement;
+    wrap?.classList.toggle('is-single', partnerItems.length<=1);
+    wrap?.classList.toggle('is-marquee', partnerAuto);
+    if (partnerAuto) {
+      const baseGroup = Array.from({length: Math.max(8, partnerItems.length)}, (_, i) => partnerItems[i % partnerItems.length]);
+      const displayItems = [...baseGroup, ...baseGroup];
+      displayItems.forEach((item, idx) => {
+        const a=document.createElement('a');
+        a.className='sponsor-partner-logo' + (idx===0?' is-active':'');
+        a.href=safeLink(item.url); a.target='_blank'; a.rel='noopener noreferrer';
+        if (idx >= baseGroup.length) a.setAttribute('aria-hidden','true');
+        a.appendChild(sponsorLogoNode(item,'sponsor-partner-logo-box'));
+        const name=document.createElement('span'); name.textContent=item.name||'Sponsor'; name.title=item.name||'Sponsor';
+        a.title=item.name||'Sponsor'; a.appendChild(name); partners.appendChild(a);
+      });
+      partners.style.setProperty('--partners-speed', `${Math.max(18, Number(s.partnersSpeed || 24))}s`);
+    } else {
+      partnerItems.forEach((item,idx)=>{
+        const a=document.createElement('a');
+        a.className='sponsor-partner-logo' + (idx===0?' is-active':''); a.href=safeLink(item.url); a.target='_blank'; a.rel='noopener noreferrer';
+        a.appendChild(sponsorLogoNode(item,'sponsor-partner-logo-box'));
+        const name=document.createElement('span'); name.textContent=item.name||'Sponsor'; name.title=item.name||'Sponsor';
+        a.title=item.name||'Sponsor'; a.appendChild(name); partners.appendChild(a);
+      });
+    }
+  }
+  setupSponsorTrackInteractions(root, s);
+  root.classList.toggle('hidden-section', s.enabled === false);
+}
+
+function renderAboutInto(root,cfg){
+  const h=cfg.sectionHeaders?.about||{};
+  setScopedText(root,'aboutTag',h.tag||'');
+  setScopedText(root,'aboutTitle1',h.title1||'');
+  setScopedText(root,'aboutTitle2',h.title2||'');
+  setScopedOptionalText(root,'aboutTitle',cfg.about?.title);
+  setScopedOptionalText(root,'aboutText',cfg.about?.text);
+}
+
+function renderFinalSponsorWall(cfg){
+  const final = document.querySelector('.final-cta');
+  if (!final) return;
+  let wall = final.querySelector('.final-sponsor-wall');
+  if (!wall) {
+    wall = document.createElement('div');
+    wall.className = 'final-sponsor-wall';
+    final.appendChild(wall);
+  }
+  wall.innerHTML = '';
+  const s = cfg.sponsors || {};
+  const vip = (s.vip || []).filter(x => x && x.enabled !== false);
+  const partners = (s.partners || []).filter(x => x && x.enabled !== false);
+  const add = (arr, cls) => arr.forEach(item => {
+    const a = document.createElement('a');
+    a.className = `final-sponsor-dot ${cls}`;
+    a.href = safeLink(item.url);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = item.name || 'Patrocinador';
+    a.appendChild(sponsorLogoNode(item,'final-sponsor-logo'));
+    wall.appendChild(a);
+  });
+  add(vip,'is-vip');
+  add(partners,'is-partner');
+  wall.classList.toggle('hidden-section', !vip.length && !partners.length);
+}
+
 function hydrateSectionInstance(el,c,item){
   if(!el||!item)return;applySectionStyle(el,item);
   const cfg=mergedConfigForItem(c,item);
@@ -940,6 +1457,7 @@ function hydrateSectionInstance(el,c,item){
   if(item.type==='clips')renderClipsInto(el,cfg);
   if(item.type==='upcoming')renderUpcomingInto(el,cfg);
   if(item.type==='announcements')renderAnnouncementsInto(el,cfg);
+  if(item.type==='sponsors')renderSponsorsInto(el,cfg);
   if(item.type==='about')renderAboutInto(el,cfg);
   if(item.type==='custom')renderCustomInto(el,cfg);
 }
@@ -1047,6 +1565,11 @@ function setupRailCarousel(root, trackSelector, prevSelector, nextSelector, card
 function setupCultureCarousel(root = document) { setupRailCarousel(root, ".culture-gallery", ".culture-arrow.rail-arrow-left", ".culture-arrow.rail-arrow-right", ".culture-card", true); }
 function setupNoticesCarousel(root = document) { setupRailCarousel(root, ".notices-track", ".notice-arrow.rail-arrow-left", ".notice-arrow.rail-arrow-right", ".notice-carousel-card", false); }
 function setupCustomCarousel(root = document) { setupRailCarousel(root, ".custom-track", ".custom-arrow.rail-arrow-left", ".custom-arrow.rail-arrow-right", ".custom-card", false); }
+function setupSponsorsCarousel(root = document) {
+  const cfg = window.__LAST_CONFIG__?.sponsors || {};
+  setupSponsorTrackInteractions(root, cfg);
+}
+
 function setupClipsCarousel(root = document) {
   const track = root.querySelector ? root.querySelector(".clips-grid") : null; if(!track)return;
   const step=()=>{const card=track.querySelector(".clip-card");if(!card)return Math.max(260,track.clientWidth*.82);return card.getBoundingClientRect().width+parseFloat(getComputedStyle(track).gap||18)};
@@ -1130,10 +1653,37 @@ async function loadConfig() {
   return normalizeConfig(window.DEFAULT_CONFIG);
 }
 
+async function initSponsorsPage() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("preview") === "1") document.getElementById("previewRibbon")?.classList.remove("hidden");
+  const c = await loadConfig();
+  window.__LAST_CONFIG__ = c;
+  applyTheme(c);
+  renderParticles(c);
+  renderNav(c);
+  setText("brandBase", c.brandBase);
+  setText("brandAccent", c.brandAccent);
+  setText("footerBrandBase", c.brandBase);
+  setText("footerBrandAccent", c.brandAccent);
+  setText("copyrightBrand", `${c.brandBase}${c.brandAccent}`);
+  document.title = `Canjes + Patrocinadores · ${c.brandBase}${c.brandAccent}`;
+  const kick = (c.socials || []).find(s => s.id === "kick") || {};
+  const headerKick = document.getElementById("headerKick");
+  if (headerKick) headerKick.href = safeLink(kick.url);
+  renderSponsors(c);
+  document.querySelectorAll('[data-section="sponsors"]').forEach(sec => {
+    sec.classList.remove('hidden-section');
+    setupSponsorsCarousel(sec);
+  });
+  setupReveal(c);
+  setText("year", new Date().getFullYear());
+}
+
 async function init() {
   const params = new URLSearchParams(location.search);
   if (params.get("preview") === "1" && params.get("fast") === "1") document.body.classList.add("preview-fast");
   const c = await loadConfig();
+  window.__LAST_CONFIG__ = c;
   applyTheme(c);
   renderParticles(c);
   renderTicker(c);
@@ -1147,6 +1697,8 @@ async function init() {
   setText("eyebrowText", c.eyebrow);
   setText("heroLine1", c.heroLine1);
   setText("heroLine2", c.heroLine2);
+  document.documentElement.style.setProperty('--hero-line1-scale', String(Math.max(.5, Math.min(2, Number(c.heroLine1Size || 1)))));
+  document.documentElement.style.setProperty('--hero-line2-scale', String(Math.max(.5, Math.min(2, Number(c.heroLine2Size || 1)))));
   const heroNeonLine=document.getElementById("heroLine2");if(heroNeonLine)heroNeonLine.dataset.glowText=String(c.heroLine2||"");
   setOptionalText("heroDescription", c.heroDescription);
   document.title = `${c.brandBase}${c.brandAccent}`;
@@ -1160,6 +1712,14 @@ async function init() {
   const tertiary = document.getElementById("tertiaryCta");
   tertiary.classList.toggle("hidden", !c.tertiaryCta?.enabled);
   if (c.tertiaryCta?.enabled) setLink("tertiaryCta", c.tertiaryCta, "↗");
+  const sponsorCta = document.getElementById("sponsorCta");
+  sponsorCta?.classList.toggle("hidden", c.sponsorCta?.enabled === false || c.sponsors?.enabled === false);
+  if (sponsorCta && c.sponsorCta?.enabled !== false) {
+    setLink("sponsorCta", { ...(c.sponsorCta || {}), url: sponsorsPageUrl() }, "✦");
+    sponsorCta.classList.add('sponsor-floating-trigger');
+    sponsorCta.dataset.openSponsors = '1';
+    bindSponsorCtaPage();
+  }
 
   setIconLink("telegramCta", "telegramLabel", c.telegramBar || {}, "↗");
   document.getElementById("telegramCta")?.classList.toggle("hidden", c.telegramBar?.enabled === false);
@@ -1179,6 +1739,7 @@ async function init() {
   setSectionHeader("clips", c.sectionHeaders?.clips || {});
   setSectionHeader("upcoming", c.sectionHeaders?.upcoming || {});
   setSectionHeader("about", c.sectionHeaders?.about || {});
+  setSectionHeader("sponsors", c.sectionHeaders?.sponsors || {});
 
   setOptionalText("liveDescription", c.liveDescription);
   setOptionalText("socialsDescription", c.socialsDescription);
@@ -1228,6 +1789,7 @@ async function init() {
   setText("announcementTitle1", c.sectionHeaders?.announcements?.title1 || "LO ÚLTIMO");
   setText("announcementTitle2", c.sectionHeaders?.announcements?.title2 || "DEL STREAM.");
   renderAnnouncements(c);
+  renderSponsors(c);
 
   setOptionalText("aboutTitle", c.about?.title);
   setOptionalText("aboutText", c.about?.text);
@@ -1235,8 +1797,10 @@ async function init() {
   setOptionalText("finalKicker", c.finalCta?.kicker);
   const finalTitle = cleanText(c.finalCta?.title || "NOS VEMOS EN DIRECTO.");
   document.getElementById("finalTitle").innerHTML = escapeHtml(finalTitle).replace(/(\S+\.)$/, "<span>$1</span>");
+  renderFinalSponsorWall(c);
 
   applySections(c);
+  bindSponsorCtaPage();
   setText("year", new Date().getFullYear());
   document.querySelectorAll('[data-section="featured"]').forEach(sec => setupCarousel(c, sec));
   document.querySelectorAll('[data-section="socials"]').forEach(sec => setupSocialCarousel(sec));
@@ -1244,9 +1808,11 @@ async function init() {
   document.querySelectorAll('[data-section="culture"]').forEach(sec => setupCultureCarousel(sec));
   document.querySelectorAll('[data-section="announcements"]').forEach(sec => setupNoticesCarousel(sec));
   document.querySelectorAll('[data-section="custom"]').forEach(sec => setupCustomCarousel(sec));
+  document.querySelectorAll('[data-section="sponsors"]').forEach(sec => setupSponsorsCarousel(sec));
   setupReveal(c);
   setupAmbient(c);
   startCountdown(c.nextStreamISO);
 }
 
-init();
+if (document.body?.dataset?.page === "sponsors") initSponsorsPage();
+else init();
