@@ -1,0 +1,7 @@
+V5.8.14
+- Corrige render de copias para que cada instancia use una plantilla limpia y no herede contenido visual de otra sección.
+- Las copias se pueden eliminar desde Secciones; los originales no muestran botón de eliminar.
+- Panel de Secciones más compacto.
+- Controles de color por sección solo para Carrusel y sus copias.
+- Controles de borde/fuerza del borde solo para Carrusel y sus copias.
+- Se ignoran colores guardados por error en secciones que no sean Carrusel.

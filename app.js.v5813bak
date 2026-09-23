@@ -17,7 +17,7 @@ function normalizeSectionItems(c) {
     if (seen.has(id)) id = `${id}_${i+1}`;
     seen.add(id);
     const style=x.style&&typeof x.style==='object'?{...x.style}:{};
-    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false, data:x.data&&typeof x.data==='object'?clone(x.data):undefined, style:{titleWhite:style.titleWhite||'',titleNeon:style.titleNeon||'',titleMode:style.titleMode||'pink',cardBorder:style.cardBorder||'',cardGlow:style.cardGlow??''} };
+    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false, data:x.data&&typeof x.data==='object'?clone(x.data):undefined, style:{titleWhite:style.titleWhite||'',titleNeon:style.titleNeon||'',titleMode:style.titleMode||'pink'} };
   });
   SECTION_TYPES.forEach(type => { if (!items.some(x => x.type === type)) items.push({ id:type, type, name:SECTION_DEFAULT_NAMES[type] || type, enabled:c.sections?.[type] !== false }); });
   c.sectionItems = items;
@@ -768,25 +768,20 @@ function sectionInstanceVisible(c, item) {
 function applySections(c) {
   const container = document.getElementById("dynamicSections");
   if (!container) return;
+  container.querySelectorAll('[data-section-duplicate="1"]').forEach(el => el.remove());
   const items = normalizeSectionItems(c);
-  if (!container.__sectionTemplates) {
-    container.__sectionTemplates = {};
-    SECTION_TYPES.forEach(type => {
-      const base = container.querySelector(`:scope > [data-section="${type}"]`);
-      if (base) container.__sectionTemplates[type] = base.cloneNode(true);
-    });
-  }
-  container.innerHTML = "";
-  items.forEach(item => {
-    const template = container.__sectionTemplates[item.type];
-    if (!template) return;
-    const el = template.cloneNode(true);
-    if (item.id !== item.type) {
+  const bases = {};
+  SECTION_TYPES.forEach(type => { bases[type] = container.querySelector(`:scope > [data-section="${type}"]:not([data-section-duplicate="1"])`); });
+  const used = new Set();
+  items.forEach((item, index) => {
+    const base = bases[item.type];
+    if (!base) return;
+    let el = base;
+    if (used.has(item.type)) {
+      el = base.cloneNode(true);
       el.dataset.sectionDuplicate = '1';
       rewriteCloneIds(el, item.id);
-    } else {
-      delete el.dataset.sectionDuplicate;
-    }
+    } else used.add(item.type);
     el.dataset.sectionInstance = item.id;
     el.dataset.sectionName = item.name || '';
     el.classList.toggle('hidden-section', !sectionInstanceVisible(c,item));
@@ -820,21 +815,13 @@ function getSectionStyle(item = {}) {
   const st = item.style || {};
   const white = safeColor(st.titleWhite || "", getComputedStyle(document.documentElement).getPropertyValue('--section-white').trim() || "#ffffff");
   const neon = safeColor(st.titleNeon || "", getComputedStyle(document.documentElement).getPropertyValue('--section-neon').trim() || "#ff4fc7");
-  const border = safeColor(st.cardBorder || st.titleNeon || "", neon);
-  const glow = Math.max(0, Math.min(100, Number(st.cardGlow ?? 65))) / 100;
-  return { white, neon, border, glow };
+  return { white, neon };
 }
 function applySectionStyle(root,item){
-  root.style.removeProperty('--section-title-white');
-  root.style.removeProperty('--section-title-neon');
-  root.style.removeProperty('--section-card-border');
-  root.style.removeProperty('--section-card-glow-strength');
-  if(item?.type!=='featured') return;
   const st=getSectionStyle(item);
   root.style.setProperty('--section-title-white',st.white);
   root.style.setProperty('--section-title-neon',st.neon);
-  root.style.setProperty('--section-card-border',st.border);
-  root.style.setProperty('--section-card-glow-strength',st.glow.toFixed(2));
+  root.style.setProperty('--section-card-border',st.neon);
 }
 function mergedConfigForItem(c,item){
   if(!item?.data) return c;
@@ -888,15 +875,17 @@ function renderAboutInto(root,cfg){
 function hydrateSectionInstance(el,c,item){
   if(!el||!item)return;applySectionStyle(el,item);
   const cfg=mergedConfigForItem(c,item);
-  if(item.type==='live')renderLiveInto(el,cfg);
-  if(item.type==='socials')renderSocialsInto(el,cfg);
-  if(item.type==='culture')renderCultureInto(el,cfg);
-  if(item.type==='featured')renderFeaturedInto(el,cfg);
-  if(item.type==='clips')renderClipsInto(el,cfg);
-  if(item.type==='upcoming')renderUpcomingInto(el,cfg);
-  if(item.type==='announcements')renderAnnouncementsInto(el,cfg);
-  if(item.type==='about')renderAboutInto(el,cfg);
-  if(item.type==='custom')renderCustomInto(el,cfg);
+  if(item.data){
+    if(item.type==='live')renderLiveInto(el,cfg);
+    if(item.type==='socials')renderSocialsInto(el,cfg);
+    if(item.type==='culture')renderCultureInto(el,cfg);
+    if(item.type==='featured')renderFeaturedInto(el,cfg);
+    if(item.type==='clips')renderClipsInto(el,cfg);
+    if(item.type==='upcoming')renderUpcomingInto(el,cfg);
+    if(item.type==='announcements')renderAnnouncementsInto(el,cfg);
+    if(item.type==='about')renderAboutInto(el,cfg);
+    if(item.type==='custom')renderCustomInto(el,cfg);
+  }
 }
 
 function setupCarousel(c, root = document) {

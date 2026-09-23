@@ -114,34 +114,3 @@ button{touch-action:manipulation}
 .clone-editor-note b{color:#fff;text-transform:uppercase;letter-spacing:.04em}
 @media(max-width:760px){.section-row{grid-template-columns:26px minmax(0,1fr) 40px 40px 40px!important;padding:8px!important;gap:7px!important}.section-name-input{height:40px!important;min-height:40px!important}.section-style-row{grid-template-columns:1fr 1fr!important;gap:7px!important}.section-style-row label{font-size:8px!important}.section-style-row input[type="color"]{height:38px!important;min-height:38px!important}.section-row input[type="checkbox"]{width:22px!important;height:22px!important}}
 @media(max-width:420px){.section-row{grid-template-columns:24px minmax(0,1fr) 38px 38px 38px!important}.section-style-row{grid-template-columns:1fr!important}}
-
-/* V5.8.14 - Secciones más compactas: controles extra solo para Carrusel */
-.section-editor{gap:7px!important}
-.section-row{grid-template-columns:24px minmax(0,1fr) 38px 38px 38px 38px!important;gap:7px!important;padding:8px 10px!important;border-radius:12px!important;align-items:center!important}
-.section-row:not(.section-row-copy){grid-template-columns:24px minmax(0,1fr) 38px 38px 38px!important}
-.section-row input[type="checkbox"]{width:20px!important;height:20px!important}
-.section-name-input{height:36px!important;min-height:36px!important;padding:7px 10px!important;border-radius:9px!important;font-size:10px!important;letter-spacing:.05em!important}
-.section-row .icon-btn{width:38px!important;height:38px!important;min-height:38px!important;border-radius:10px!important;font-size:15px!important;padding:0!important}
-.section-duplicate{font-size:16px!important}
-.section-style-row{grid-column:1 / -1!important;display:block!important;margin-top:2px!important;padding-top:0!important;border-top:1px solid rgba(255,255,255,.06)}
-.section-style-row summary{cursor:pointer;list-style:none;height:30px;display:flex;align-items:center;color:#aaa;font:700 9px "Space Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
-.section-style-row summary::-webkit-details-marker{display:none}
-.section-style-row summary:after{content:"+";margin-left:8px;color:var(--pink);font-size:13px}
-.section-style-row[open] summary:after{content:"−"}
-.section-style-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:2px 0 4px}
-.section-style-grid label{font-size:8px!important;color:#9d98a2!important;letter-spacing:.08em;text-transform:uppercase;display:grid;gap:4px;min-width:0}
-.section-style-grid input[type="color"]{width:100%!important;height:30px!important;min-height:30px!important;padding:3px!important;border-radius:8px!important;background:#09090c!important}
-.section-style-grid input[type="range"]{width:100%!important;min-height:30px!important;height:30px!important;accent-color:var(--pink)!important}
-@media(max-width:760px){
-  .section-row,.section-row:not(.section-row-copy){grid-template-columns:22px minmax(0,1fr) 36px 36px 36px!important;padding:7px!important;gap:6px!important}
-  .section-row.section-row-copy{grid-template-columns:22px minmax(0,1fr) 36px 36px 36px 36px!important}
-  .section-name-input{height:34px!important;min-height:34px!important;font-size:9px!important}
-  .section-row .icon-btn{width:36px!important;height:36px!important;min-height:36px!important}
-  .section-style-grid{grid-template-columns:1fr 1fr;gap:6px}
-}
-@media(max-width:420px){
-  .section-row,.section-row:not(.section-row-copy),.section-row.section-row-copy{grid-template-columns:22px minmax(0,1fr) 34px 34px!important}
-  .section-row .icon-btn{width:34px!important;height:34px!important;min-height:34px!important}
-  .section-row [data-up],.section-row [data-down]{font-size:13px!important}
-  .section-style-grid{grid-template-columns:1fr!important}
-}
