@@ -1,0 +1,10 @@
+V5.8.11 · DUPLICAR + RENOMBRAR SECCIONES
+========================================
+
+- Se puede duplicar cualquier sección desde “Secciones”.
+- Cada sección se puede renombrar desde “Secciones”.
+- El menú lateral de ADMINISTRACIÓN refleja esos nombres.
+- Las secciones del menú lateral se ordenan automáticamente según el orden definido en “Secciones”.
+- Las secciones duplicadas también aparecen en la web y respetan mostrar/ocultar y el orden.
+- No se eliminó ninguna función existente.
+- Compatibilidad automática con configuraciones V5.8.10 guardadas en Supabase.

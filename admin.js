@@ -3,17 +3,42 @@ const LIVE_KEY="streamerHubConfig_v2", PREVIEW_KEY="streamerHubPreview_v2", LOCA
 let draft=null,published=null,previewSignature="",dirty=false,draftRevision=0;
 let cloudBootstrapDraft=null;
 const clone=v=>JSON.parse(JSON.stringify(v));
+const SECTION_TYPES=["live","socials","culture","featured","clips","upcoming","announcements","about","custom"];
+const SECTION_DEFAULT_NAMES={live:"Kick / En vivo",socials:"Redes",culture:"Instagram / Cultura",featured:"Carrusel",clips:"Clips",upcoming:"Próximo stream",announcements:"Anuncio",about:"Sobre mí",custom:"Extra"};
+const SECTION_PANEL_IDS={live:"live",socials:"socials",culture:"cultureAdmin",featured:"featured",clips:"clips",upcoming:"upcoming",announcements:"announcement",about:"about",custom:"extras"};
+function makeSectionItems(c){
+  const legacyOrder=Array.isArray(c.sectionOrder)?c.sectionOrder.filter(x=>SECTION_TYPES.includes(x)):SECTION_TYPES.slice();
+  const order=[...legacyOrder,...SECTION_TYPES.filter(x=>!legacyOrder.includes(x))];
+  return order.map(type=>({id:type,type,name:SECTION_DEFAULT_NAMES[type]||type,enabled:c.sections?.[type]!==false}));
+}
+function normalizeSectionItems(c){
+  let items=Array.isArray(c.sectionItems)?c.sectionItems:[];
+  if(!items.length)items=makeSectionItems(c);
+  const seen=new Set();
+  items=items.filter(x=>x&&SECTION_TYPES.includes(x.type)).map((x,i)=>{
+    let id=String(x.id||`${x.type}_${i+1}`);
+    if(seen.has(id))id=`${id}_${i+1}`;
+    seen.add(id);
+    return {id,type:x.type,name:String(x.name||SECTION_DEFAULT_NAMES[x.type]||x.type),enabled:x.enabled!==false};
+  });
+  SECTION_TYPES.forEach(type=>{if(!items.some(x=>x.type===type))items.push({id:type,type,name:SECTION_DEFAULT_NAMES[type]||type,enabled:c.sections?.[type]!==false})});
+  c.sectionItems=items;
+  c.sectionOrder=items.map(x=>x.type);
+  return items;
+}
 function deepMerge(base,custom){if(!custom||typeof custom!=="object")return clone(base);const out=Array.isArray(base)?[...base]:{...base};for(const[k,v]of Object.entries(custom)){if(v&&typeof v==="object"&&!Array.isArray(v)&&base?.[k]&&typeof base[k]==="object"&&!Array.isArray(base[k]))out[k]=deepMerge(base[k],v);else out[k]=v;}return out;}
 function normalizeConfig(input){
   const d=clone(window.DEFAULT_CONFIG||{}), incoming=input||{};
   const hadAnnouncements=Array.isArray(incoming.announcements);
+  const hadSectionItems=Array.isArray(incoming.sectionItems)&&incoming.sectionItems.length>0;
   const legacyAnnouncement=incoming.announcement&&typeof incoming.announcement==="object"?clone(incoming.announcement):null;
   let c=deepMerge(d,incoming);
+  if(!hadSectionItems)delete c.sectionItems;
   if(!Array.isArray(c.socials))c.socials=[]; if(!Array.isArray(c.featured))c.featured=[]; if(!Array.isArray(c.clips))c.clips=[]; if(!Array.isArray(c.liveStats))c.liveStats=clone(d.liveStats); if(!Array.isArray(c.navLinks))c.navLinks=clone(d.navLinks); if(!Array.isArray(c.customSections))c.customSections=[];
   if(!c.culture||typeof c.culture!=="object")c.culture=clone(d.culture); if(!Array.isArray(c.culture.items))c.culture.items=[];
   if(!Array.isArray(c.announcements))c.announcements=[];
   if(!hadAnnouncements&&legacyAnnouncement&&["kicker","title","chip","text","cta","url","image"].some(k=>legacyAnnouncement[k])) c.announcements=[{id:"notice_migrated",enabled:legacyAnnouncement.enabled!==false,kicker:legacyAnnouncement.kicker||"AVISO",title:legacyAnnouncement.title||"AVISO / NOVEDAD",chip:legacyAnnouncement.chip||"",text:legacyAnnouncement.text||"",cta:legacyAnnouncement.cta||"",url:legacyAnnouncement.url||"#",image:legacyAnnouncement.image||""}];
-  const valid=["live","socials","culture","featured","clips","upcoming","announcements","about","custom"]; if(!c.sections||typeof c.sections!=="object")c.sections={}; c.sections={...d.sections,...c.sections}; if(!Array.isArray(c.sectionOrder))c.sectionOrder=[...valid]; c.sectionOrder=[...c.sectionOrder.filter(x=>valid.includes(x)),...valid.filter(x=>!c.sectionOrder.includes(x))]; c.sectionHeaders=deepMerge(d.sectionHeaders,c.sectionHeaders||{});
+  if(!c.sections||typeof c.sections!=="object")c.sections={}; c.sections={...d.sections,...c.sections}; normalizeSectionItems(c); c.sectionHeaders=deepMerge(d.sectionHeaders,c.sectionHeaders||{});
   const clean=v=>[/activa o desactiva este bloque/i,/el contador se actualiza/i,/cuando estés en directo/i,/todo tu ecosistema en un solo lugar/i,/una página central para tus directos/i,/describe aquí/i,/edita esta/i,/tu puerta principal/i,/aquí aparecerán tus anuncios/i,/novedades diarias, momentos del estudio/i].some(rx=>rx.test(String(v||"")))?"":v;
   c.liveDescription=clean(c.liveDescription);c.socialsDescription=clean(c.socialsDescription);c.nextStreamText=clean(c.nextStreamText);c.about.text=clean(c.about?.text);c.culture.text=clean(c.culture?.text);c.featured.forEach(x=>x.subtitle=clean(x.subtitle));c.clips.forEach(x=>x.subtitle=clean(x.subtitle));c.customSections.forEach(x=>x.text=clean(x.text));c.culture.items.forEach(x=>{x.text=clean(x.text);if(!x.platform)x.platform='instagram';if(x.platformLabel==null)x.platformLabel='';});c.announcements.forEach(x=>{x.text=clean(x.text);if(x.enabled==null)x.enabled=true;});
   if(c.tertiaryCta && /nuevo lanzamiento/i.test(String(c.tertiaryCta.label||""))) c.tertiaryCta.enabled=false;
@@ -94,7 +119,22 @@ function renderFeatured(){const w=document.getElementById("featuredEditor");w.in
 function renderClips(){const w=document.getElementById("clipsEditor");w.innerHTML="";(draft.clips||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Clip ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-clip="${i}">↑</button><button class="icon-btn" data-down-clip="${i}">↓</button><button class="icon-btn danger" data-remove-clip="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-clip="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Título<input data-clip="${i}" data-field="title" value="${esc(x.title)}"></label><label>Subtítulo<input data-clip="${i}" data-field="subtitle" value="${esc(x.subtitle)}"></label><label class="full">URL<input data-clip="${i}" data-field="url" value="${esc(x.url)}"></label>${imageField(`clips.${i}.image`,x.image)}</div>`;w.appendChild(d)});w.querySelectorAll("[data-clip]").forEach(e=>e.addEventListener(e.type==="checkbox"?"change":"input",()=>{draft.clips[Number(e.dataset.clip)][e.dataset.field]=e.type==="checkbox"?e.checked:e.value;previewSignature="";markDirty()}));w.querySelectorAll("[data-remove-clip]").forEach(b=>b.onclick=()=>{draft.clips.splice(Number(b.dataset.removeClip),1);renderClips();bindImages();previewSignature="";markDirty()});w.querySelectorAll('[data-up-clip]').forEach(b=>b.onclick=()=>moveArray(draft.clips,Number(b.dataset.upClip),-1,()=>{renderClips();bindImages()}));w.querySelectorAll('[data-down-clip]').forEach(b=>b.onclick=()=>moveArray(draft.clips,Number(b.dataset.downClip),1,()=>{renderClips();bindImages()}))}
 function renderCustomSections(){const w=document.getElementById('customSectionEditor');w.innerHTML='';(draft.customSections||[]).forEach((s,i)=>{const d=document.createElement('div');d.className='subcard';d.innerHTML=`<div class="subcard-head"><h3>Sección extra ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-custom="${i}">↑</button><button class="icon-btn" data-down-custom="${i}">↓</button><button class="icon-btn danger" data-remove-custom="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-custom="${i}" data-field="enabled" ${s.enabled!==false?'checked':''}></label><label>Tag<input data-custom="${i}" data-field="kicker" value="${esc(s.kicker)}"></label><label>ID / ancla<input data-custom="${i}" data-field="anchorId" value="${esc(s.anchorId)}"></label><label>Título blanco<input data-custom="${i}" data-field="title1" value="${esc(s.title1)}"></label><label>Título neon<input data-custom="${i}" data-field="title2" value="${esc(s.title2)}"></label><label class="full">Texto<textarea data-custom="${i}" data-field="text">${esc(s.text)}</textarea></label><label>Botón CTA<input data-custom="${i}" data-field="ctaLabel" value="${esc(s.ctaLabel)}"></label><label>URL CTA<input data-custom="${i}" data-field="ctaUrl" value="${esc(s.ctaUrl)}"></label>${imageField(`customSections.${i}.image`,s.image)}</div>`;w.appendChild(d)});w.querySelectorAll('[data-custom]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{draft.customSections[Number(e.dataset.custom)][e.dataset.field]=e.type==='checkbox'?e.checked:e.value;previewSignature='';markDirty()}));w.querySelectorAll('[data-remove-custom]').forEach(b=>b.onclick=()=>{draft.customSections.splice(Number(b.dataset.removeCustom),1);renderCustomSections();bindImages();previewSignature='';markDirty()});w.querySelectorAll('[data-up-custom]').forEach(b=>b.onclick=()=>moveArray(draft.customSections,Number(b.dataset.upCustom),-1,()=>{renderCustomSections();bindImages()}));w.querySelectorAll('[data-down-custom]').forEach(b=>b.onclick=()=>moveArray(draft.customSections,Number(b.dataset.downCustom),1,()=>{renderCustomSections();bindImages()}))}
 function renderAnnouncements(){const w=document.getElementById("announcementEditor");if(!w)return;w.innerHTML="";(draft.announcements||[]).forEach((x,i)=>{const d=document.createElement("div");d.className="subcard";d.innerHTML=`<div class="subcard-head"><h3>Aviso ${i+1}</h3><div class="sub-actions"><button class="icon-btn" data-up-announcement="${i}">↑</button><button class="icon-btn" data-down-announcement="${i}">↓</button><button class="icon-btn danger" data-remove-announcement="${i}">×</button></div></div><div class="subcard-grid"><label class="toggle-row full"><span>Activado</span><input type="checkbox" data-announcement="${i}" data-field="enabled" ${x.enabled!==false?"checked":""}></label><label>Etiqueta pequeña<input data-announcement="${i}" data-field="kicker" value="${esc(x.kicker||'AVISO')}"></label><label>Lugar / chip<input data-announcement="${i}" data-field="chip" value="${esc(x.chip||'')}"></label><label class="full">Título<input data-announcement="${i}" data-field="title" value="${esc(x.title||'')}"></label><label class="full">Texto<textarea data-announcement="${i}" data-field="text">${esc(x.text||'')}</textarea></label><label>Texto botón externo<input data-announcement="${i}" data-field="cta" value="${esc(x.cta||'')}"></label><label>URL botón externo<input data-announcement="${i}" data-field="url" value="${esc(x.url||'#')}"></label>${imageField(`announcements.${i}.image`,x.image,'Imagen del aviso')}</div>`;w.appendChild(d)});w.querySelectorAll('[data-announcement]').forEach(e=>e.addEventListener(e.type==='checkbox'?'change':'input',()=>{const item=draft.announcements[Number(e.dataset.announcement)];item[e.dataset.field]=e.type==='checkbox'?e.checked:e.value;markDirty()}));w.querySelectorAll('[data-remove-announcement]').forEach(b=>b.onclick=()=>{draft.announcements.splice(Number(b.dataset.removeAnnouncement),1);renderAnnouncements();bindImages();markDirty()});w.querySelectorAll('[data-up-announcement]').forEach(b=>b.onclick=()=>moveArray(draft.announcements,Number(b.dataset.upAnnouncement),-1,()=>{renderAnnouncements();bindImages()}));w.querySelectorAll('[data-down-announcement]').forEach(b=>b.onclick=()=>moveArray(draft.announcements,Number(b.dataset.downAnnouncement),1,()=>{renderAnnouncements();bindImages()}))}
-function renderSections(){const labels={live:'En vivo',socials:'Redes',culture:'Instagram',featured:'Destacado',clips:'Clips',upcoming:'Próximo stream',announcements:'Avisos',about:'Sobre mí',custom:'Extra'};const w=document.getElementById("sectionEditor");w.innerHTML="";(draft.sectionOrder||[]).forEach((k,i)=>{const r=document.createElement("div");r.className="section-row";r.innerHTML=`<input type="checkbox" ${draft.sections?.[k]!==false?"checked":""} data-section-toggle="${esc(k)}"><span class="section-name">${esc(labels[k]||k)}</span><button class="icon-btn" data-up="${i}">↑</button><button class="icon-btn" data-down="${i}">↓</button>`;w.appendChild(r)});w.querySelectorAll("[data-section-toggle]").forEach(e=>e.onchange=()=>{draft.sections[e.dataset.sectionToggle]=e.checked;previewSignature="";markDirty()});w.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>moveArray(draft.sectionOrder,Number(b.dataset.up),-1,renderSections));w.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>moveArray(draft.sectionOrder,Number(b.dataset.down),1,renderSections))}
+function renderSections(){
+  normalizeSectionItems(draft);
+  const w=document.getElementById("sectionEditor");w.innerHTML="";
+  (draft.sectionItems||[]).forEach((item,i)=>{
+    const r=document.createElement("div");r.className="section-row";
+    r.innerHTML=`<input type="checkbox" ${item.enabled!==false?"checked":""} data-section-toggle="${esc(item.id)}" aria-label="Mostrar ${esc(item.name)}"><input class="section-name-input" value="${esc(item.name)}" data-section-name="${esc(item.id)}" aria-label="Nombre de la sección"><button class="icon-btn section-duplicate" data-duplicate-section="${i}" title="Duplicar sección" aria-label="Duplicar sección">⧉</button><button class="icon-btn" data-up="${i}" title="Subir">↑</button><button class="icon-btn" data-down="${i}" title="Bajar">↓</button>`;
+    w.appendChild(r);
+  });
+  w.querySelectorAll("[data-section-toggle]").forEach(e=>e.onchange=()=>{const item=draft.sectionItems.find(x=>x.id===e.dataset.sectionToggle);if(!item)return;item.enabled=e.checked;if(item.id===item.type)draft.sections[item.type]=e.checked;previewSignature="";renderAdminNavigation();markDirty()});
+  w.querySelectorAll("[data-section-name]").forEach(e=>e.oninput=()=>{const item=draft.sectionItems.find(x=>x.id===e.dataset.sectionName);if(!item)return;item.name=e.value||SECTION_DEFAULT_NAMES[item.type]||item.type;renderAdminNavigation();previewSignature="";markDirty()});
+  w.querySelectorAll("[data-duplicate-section]").forEach(b=>b.onclick=()=>{const i=Number(b.dataset.duplicateSection),source=draft.sectionItems[i];if(!source)return;const copy={...clone(source),id:uid("section"),name:`${source.name} copia`,enabled:source.enabled!==false};draft.sectionItems.splice(i+1,0,copy);draft.sectionOrder=draft.sectionItems.map(x=>x.type);renderSections();renderAdminNavigation();previewSignature="";markDirty();status("Sección duplicada ✓")});
+  w.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>moveSectionItem(Number(b.dataset.up),-1));
+  w.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>moveSectionItem(Number(b.dataset.down),1));
+}
+function moveSectionItem(i,dir){const j=i+dir;if(j<0||j>=draft.sectionItems.length)return;[draft.sectionItems[i],draft.sectionItems[j]]=[draft.sectionItems[j],draft.sectionItems[i]];draft.sectionOrder=draft.sectionItems.map(x=>x.type);renderSections();renderAdminNavigation();previewSignature="";markDirty()}
+
 function moveArray(arr,index,dir,after){const n=index+dir;if(n<0||n>=arr.length)return;[arr[index],arr[n]]=[arr[n],arr[index]];previewSignature='';after();markDirty()}
 async function fileToDataUrl(file){
   if(!new Set(["image/jpeg","image/png","image/webp","image/gif"]).has(file.type))throw new Error("Usa JPG, PNG, WEBP o GIF.");
@@ -111,7 +151,21 @@ async function fileToDataUrl(file){
 }
 async function handleUpload(file,path){if(!file)return;try{status("Procesando imagen...");const url=window.CloudConfig.enabled()?await window.CloudConfig.uploadImage(file):await fileToDataUrl(file);setByPath(draft,path,url);renderAll();markDirty();if(String(path||"").startsWith("culture.items.")){activePanelId="cultureAdmin";queueCulturePreview()}status("Imagen lista. Pulsa VISTA PREVIA para revisarla ✓")}catch(e){status(e.message,false)}}
 function bindImages(){document.querySelectorAll("[data-upload-target]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.onchange=()=>handleUpload(e.files?.[0],e.dataset.uploadTarget)});document.querySelectorAll("[data-array-image-path]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.oninput=()=>{setByPath(draft,e.dataset.arrayImagePath,e.value);previewSignature="";markDirty();if(String(e.dataset.arrayImagePath||"").startsWith("culture.items.")){activePanelId="cultureAdmin";queueCulturePreview()}}});document.querySelectorAll("[data-array-upload-path]").forEach(e=>{if(e.dataset.imgBound)return;e.dataset.imgBound="1";e.onchange=()=>handleUpload(e.files?.[0],e.dataset.arrayUploadPath)})}
-function renderAll(){document.querySelectorAll("[data-path]").forEach(e=>delete e.dataset.bound);bindSimpleFields();renderTheme();renderStats();renderNav();renderSocials();renderCultureEditor();renderSections();renderFeatured();renderClips();renderAnnouncements();renderCustomSections();bindImages();updateActionState()}
+function renderAdminNavigation(){
+  const nav=document.getElementById("adminNav")||document.querySelector(".admin-sidebar nav");if(!nav||!draft)return;
+  normalizeSectionItems(draft);
+  const core=[['general','General'],['nav','Navegación'],['theme','Colores'],['effects','Efectos']];
+  const tail=[['sections','Secciones'],['history','Historial']];
+  const parts=[];
+  core.forEach(([id,label])=>parts.push(`<a href="#${id}" data-admin-panel="${id}" data-nav-key="core-${id}">${esc(label)}</a>`));
+  draft.sectionItems.forEach(item=>{const panel=SECTION_PANEL_IDS[item.type];if(panel)parts.push(`<a href="#${panel}" data-admin-panel="${panel}" data-section-item="${esc(item.id)}" data-nav-key="section-${esc(item.id)}">${esc(item.name)}</a>`)});
+  tail.forEach(([id,label])=>parts.push(`<a href="#${id}" data-admin-panel="${id}" data-nav-key="core-${id}">${esc(label)}</a>`));
+  nav.innerHTML=parts.join('');
+  updateAdminNavActive();
+}
+let activeAdminNavKey='core-general',activeSectionItemId='';
+function updateAdminNavActive(){document.querySelectorAll('.admin-sidebar nav a').forEach(a=>{const active=(a.dataset.navKey||'')===activeAdminNavKey;a.classList.toggle('active',active);if(active&&window.innerWidth<=760)a.scrollIntoView({block:'nearest',inline:'center'})})}
+function renderAll(){document.querySelectorAll("[data-path]").forEach(e=>delete e.dataset.bound);bindSimpleFields();renderTheme();renderStats();renderNav();renderSocials();renderCultureEditor();renderSections();renderFeatured();renderClips();renderAnnouncements();renderCustomSections();renderAdminNavigation();bindImages();updateActionState()}
 function getFrameScroll(frame){try{return frame?.contentWindow?{x:frame.contentWindow.scrollX||0,y:frame.contentWindow.scrollY||0}:{x:0,y:0}}catch{return{x:0,y:0}}}
 function frameReady(frame){try{return !!(frame?.contentDocument?.documentElement&&frame.contentWindow)}catch{return false}}
 const PANEL_TO_PREVIEW={general:'#hero',nav:'#hero',theme:'#hero',effects:'#hero',live:'#liveSection',socials:'#socials',cultureAdmin:'#culture',featured:'#featured',clips:'#clips',upcoming:'#upcoming',announcement:'#announcements',about:'#about',extras:'#customSectionContainer',sections:'#dynamicSections',history:'footer'};
@@ -132,16 +186,15 @@ function scrollPreviewFrame(frameId,target,force=false){
 }
 function syncPreviewToPanel(panelId,force=false){
   activePanelId=panelId||activePanelId;
-  const target=PANEL_TO_PREVIEW[activePanelId];if(!target)return;
+  let target=PANEL_TO_PREVIEW[activePanelId];
+  if(activeSectionItemId&&draft?.sectionItems){const item=draft.sectionItems.find(x=>x.id===activeSectionItemId);if(item&&SECTION_PANEL_IDS[item.type]===activePanelId)target=`[data-section-instance="${item.id}"]`;}
+  if(!target)return;
   scrollPreviewFrame('previewFrame',target,force);
   const full=document.getElementById('fullPreviewModal');
   if(full&&!full.classList.contains('hidden'))scrollPreviewFrame('fullPreviewFrame',target,force);
-  const label=document.getElementById('previewSectionLabel');if(label)label.textContent=PANEL_LABELS[activePanelId]||activePanelId.toUpperCase();
-  document.querySelectorAll('.admin-sidebar nav a').forEach(a=>{
-    const active=(a.getAttribute('href')||'')===`#${activePanelId}`;
-    a.classList.toggle('active',active);
-    if(active&&window.innerWidth<=760)a.scrollIntoView({block:'nearest',inline:'center'});
-  });
+  const label=document.getElementById('previewSectionLabel');
+  if(label){const item=activeSectionItemId&&draft?.sectionItems?.find(x=>x.id===activeSectionItemId);label.textContent=item?.name||PANEL_LABELS[activePanelId]||activePanelId.toUpperCase();}
+  updateAdminNavActive();
 }
 function adminProbeY(){
   const topbar=document.querySelector('.admin-topbar')?.getBoundingClientRect();
@@ -163,23 +216,22 @@ function currentAdminPanel(){
 }
 function schedulePreviewSync(){
   if(syncRAF)return;
-  syncRAF=requestAnimationFrame(()=>{syncRAF=0;const panel=currentAdminPanel();if(panel&&panel.id!==lastSyncedPanel){lastSyncedPanel=panel.id;syncPreviewToPanel(panel.id,false)}});
+  syncRAF=requestAnimationFrame(()=>{syncRAF=0;const panel=currentAdminPanel();if(panel&&panel.id!==lastSyncedPanel){lastSyncedPanel=panel.id;activeSectionItemId='';const match=draft?.sectionItems?.find(x=>SECTION_PANEL_IDS[x.type]===panel.id);activeAdminNavKey=match?`section-${match.id}`:`core-${panel.id}`;syncPreviewToPanel(panel.id,false)}});
 }
 function setMobileEditing(on){if(window.innerWidth<=760){document.body.classList.toggle('mobile-editing',!!on);requestAnimationFrame(schedulePreviewSync)}}
 function installPreviewSync(){
-  const nav=[...document.querySelectorAll('.admin-sidebar nav a')];
-  nav.forEach(a=>a.addEventListener('click',e=>{
-    e.preventDefault();
-    const id=(a.getAttribute('href')||'').replace('#','');
-    const panel=document.getElementById(id);if(!panel)return;
-    activePanelId=id;lastSyncedPanel=id;
+  const nav=document.getElementById('adminNav')||document.querySelector('.admin-sidebar nav');
+  nav?.addEventListener('click',e=>{
+    const a=e.target.closest('a[data-admin-panel]');if(!a)return;e.preventDefault();
+    const id=a.dataset.adminPanel;const panel=document.getElementById(id);if(!panel)return;
+    activePanelId=id;lastSyncedPanel=id;activeSectionItemId=a.dataset.sectionItem||'';activeAdminNavKey=a.dataset.navKey||`core-${id}`;
     panel.scrollIntoView({behavior:'auto',block:'start'});
     try{history.replaceState(null,'',`#${id}`)}catch{}
     syncPreviewToPanel(id,true);
-  }));
+  });
   const editor=document.querySelector('.editor');
   editor?.addEventListener('focusin',e=>{
-    const panel=e.target.closest('.panel');if(panel){activePanelId=panel.id;lastSyncedPanel=panel.id;syncPreviewToPanel(panel.id,false)}
+    const panel=e.target.closest('.panel');if(panel){activePanelId=panel.id;lastSyncedPanel=panel.id;if(!activeSectionItemId){const match=draft?.sectionItems?.find(x=>SECTION_PANEL_IDS[x.type]===panel.id);activeAdminNavKey=match?`section-${match.id}`:`core-${panel.id}`;}syncPreviewToPanel(panel.id,false)}
     if(e.target.matches('input,textarea,select'))setMobileEditing(true);
   });
   editor?.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(!(a&&a.closest&&a.closest('.editor')&&a.matches('input,textarea,select')))setMobileEditing(false)},80));

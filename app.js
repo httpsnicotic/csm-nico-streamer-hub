@@ -2,6 +2,27 @@ const LIVE_KEY = "streamerHubConfig_v2";
 const PREVIEW_KEY = "streamerHubPreview_v2";
 
 const clone = value => JSON.parse(JSON.stringify(value));
+const SECTION_TYPES = ["live","socials","culture","featured","clips","upcoming","announcements","about","custom"];
+const SECTION_DEFAULT_NAMES = { live:"Kick / En vivo", socials:"Redes", culture:"Instagram / Cultura", featured:"Carrusel", clips:"Clips", upcoming:"Próximo stream", announcements:"Anuncio", about:"Sobre mí", custom:"Extra" };
+function normalizeSectionItems(c) {
+  let items = Array.isArray(c.sectionItems) ? c.sectionItems : [];
+  if (!items.length) {
+    const legacy = Array.isArray(c.sectionOrder) ? c.sectionOrder.filter(x => SECTION_TYPES.includes(x)) : SECTION_TYPES.slice();
+    const order = [...legacy, ...SECTION_TYPES.filter(x => !legacy.includes(x))];
+    items = order.map(type => ({ id:type, type, name:SECTION_DEFAULT_NAMES[type] || type, enabled:c.sections?.[type] !== false }));
+  }
+  const seen = new Set();
+  items = items.filter(x => x && SECTION_TYPES.includes(x.type)).map((x,i) => {
+    let id = String(x.id || `${x.type}_${i+1}`);
+    if (seen.has(id)) id = `${id}_${i+1}`;
+    seen.add(id);
+    return { id, type:x.type, name:String(x.name || SECTION_DEFAULT_NAMES[x.type] || x.type), enabled:x.enabled !== false };
+  });
+  SECTION_TYPES.forEach(type => { if (!items.some(x => x.type === type)) items.push({ id:type, type, name:SECTION_DEFAULT_NAMES[type] || type, enabled:c.sections?.[type] !== false }); });
+  c.sectionItems = items;
+  c.sectionOrder = items.map(x => x.type);
+  return items;
+}
 
 function deepMerge(base, custom) {
   if (!custom || typeof custom !== "object") return clone(base);
@@ -58,8 +79,10 @@ function normalizeConfig(custom) {
   const defaults = clone(window.DEFAULT_CONFIG || {});
   const incoming = custom || {};
   const hadAnnouncements = Array.isArray(incoming.announcements);
+  const hadSectionItems = Array.isArray(incoming.sectionItems) && incoming.sectionItems.length > 0;
   const legacyAnnouncement = incoming.announcement && typeof incoming.announcement === "object" ? clone(incoming.announcement) : null;
   const c = deepMerge(defaults, incoming);
+  if (!hadSectionItems) delete c.sectionItems;
 
   if (!Array.isArray(c.socials)) c.socials = [];
   if (!Array.isArray(c.featured)) c.featured = [];
@@ -74,13 +97,8 @@ function normalizeConfig(custom) {
     c.announcements = [{ id:"notice_migrated", enabled:legacyAnnouncement.enabled !== false, kicker:legacyAnnouncement.kicker || "AVISO", title:legacyAnnouncement.title || "AVISO / NOVEDAD", chip:legacyAnnouncement.chip || "", text:legacyAnnouncement.text || "", cta:legacyAnnouncement.cta || "", url:legacyAnnouncement.url || "#", image:legacyAnnouncement.image || "" }];
   }
 
-  const validSections = ["live","socials","culture","featured","clips","upcoming","announcements","about","custom"];
   c.sections = { ...(defaults.sections || {}), ...(c.sections || {}) };
-  if (!Array.isArray(c.sectionOrder)) c.sectionOrder = [...validSections];
-  c.sectionOrder = [
-    ...c.sectionOrder.filter(x => validSections.includes(x)),
-    ...validSections.filter(x => !c.sectionOrder.includes(x))
-  ];
+  normalizeSectionItems(c);
   c.sectionHeaders = deepMerge(defaults.sectionHeaders || {}, c.sectionHeaders || {});
 
   c.liveDescription = cleanText(c.liveDescription);
@@ -721,17 +739,45 @@ function renderAnnouncements(c) {
   document.getElementById("announcements")?.classList.toggle("no-notices", !items.length);
 }
 
+function rewriteCloneIds(root, suffix) {
+  if (root.id) root.id = `${root.id}--${suffix}`;
+  root.querySelectorAll('[id]').forEach(el => { el.id = `${el.id}--${suffix}`; });
+  root.querySelectorAll('[for]').forEach(el => { const v=el.getAttribute('for'); if(v)el.setAttribute('for',`${v}--${suffix}`); });
+}
+function sectionInstanceVisible(c, item) {
+  if (item.enabled === false) return false;
+  if (item.type === 'culture' && c.culture?.enabled === false) return false;
+  if (item.type === 'announcements') {
+    const hasNotices = (c.announcements || []).some(x => x && x.enabled !== false);
+    if (c.announcement?.enabled === false || !hasNotices) return false;
+  }
+  if (item.type === 'custom') {
+    const hasCustom = (c.customSections || []).some(x => x && x.enabled !== false);
+    if (!hasCustom) return false;
+  }
+  return true;
+}
 function applySections(c) {
   const container = document.getElementById("dynamicSections");
-  (c.sectionOrder || []).forEach(key => {
-    const el = container.querySelector(`[data-section="${CSS.escape(key)}"]`);
-    if (el) container.appendChild(el);
-  });
-  container.querySelectorAll("[data-section]").forEach(el => {
-    const key = el.dataset.section;
-    const hasNotices = (c.announcements || []).some(x => x && x.enabled !== false);
-    const enabled = c.sections?.[key] !== false && !(key === "announcements" && (c.announcement?.enabled === false || !hasNotices));
-    if (key !== "custom") el.classList.toggle("hidden-section", !enabled);
+  if (!container) return;
+  container.querySelectorAll('[data-section-duplicate="1"]').forEach(el => el.remove());
+  const items = normalizeSectionItems(c);
+  const bases = {};
+  SECTION_TYPES.forEach(type => { bases[type] = container.querySelector(`:scope > [data-section="${type}"]:not([data-section-duplicate="1"])`); });
+  const used = new Set();
+  items.forEach((item, index) => {
+    const base = bases[item.type];
+    if (!base) return;
+    let el = base;
+    if (used.has(item.type)) {
+      el = base.cloneNode(true);
+      el.dataset.sectionDuplicate = '1';
+      rewriteCloneIds(el, item.id);
+    } else used.add(item.type);
+    el.dataset.sectionInstance = item.id;
+    el.dataset.sectionName = item.name || '';
+    el.classList.toggle('hidden-section', !sectionInstanceVisible(c,item));
+    container.appendChild(el);
   });
 }
 
@@ -741,12 +787,13 @@ function setSectionHeader(prefix, obj = {}) {
   setText(`${prefix}Title2`, obj.title2 || "");
 }
 
-function setupCarousel(c) {
-  const viewport = document.getElementById("featuredViewport");
-  const track = document.getElementById("featuredTrack");
+function setupCarousel(c, root = document) {
+  const viewport = root.querySelector ? root.querySelector(".carousel-viewport") : null;
+  const track = root.querySelector ? root.querySelector(".carousel-track") : null;
+  const prevFeatured = root.querySelector ? root.querySelector(".featured-arrow.rail-arrow-left") : null;
+  const nextFeatured = root.querySelector ? root.querySelector(".featured-arrow.rail-arrow-right") : null;
+  if (!viewport || !track) return;
   const cards = [...track.children];
-  const prevFeatured = document.getElementById("prevFeatured");
-  const nextFeatured = document.getElementById("nextFeatured");
   const hasFeaturedCarousel = cards.length > 1;
   prevFeatured?.classList.toggle("hidden", !hasFeaturedCarousel);
   nextFeatured?.classList.toggle("hidden", !hasFeaturedCarousel);
@@ -755,7 +802,6 @@ function setupCarousel(c) {
   let index = 0;
   let timer = null;
   let startX = 0;
-
   const gap = () => parseFloat(getComputedStyle(track).gap || 22);
   const step = () => cards[0].getBoundingClientRect().width + gap();
   const max = () => Math.max(0, cards.length - 1);
@@ -775,18 +821,12 @@ function setupCarousel(c) {
     if (c.effects?.carouselAuto === false || cards.length <= 1) return;
     timer = setInterval(() => go(index >= max() ? 0 : index + 1), Math.max(1500, Number(c.effects?.carouselSeconds || 3.6) * 1000));
   };
-
   if (nextFeatured) nextFeatured.onclick = () => { go(index >= max() ? 0 : index + 1); auto(); };
   if (prevFeatured) prevFeatured.onclick = () => { go(index <= 0 ? max() : index - 1); auto(); };
   viewport.addEventListener("pointerdown", e => { startX = e.clientX; });
-  viewport.addEventListener("pointerup", e => {
-    const d = e.clientX - startX;
-    if (Math.abs(d) > 45) go(d < 0 ? index + 1 : index - 1);
-    auto();
-  });
+  viewport.addEventListener("pointerup", e => { const d=e.clientX-startX; if(Math.abs(d)>45)go(d<0?index+1:index-1); auto(); });
   window.addEventListener("resize", () => go(index));
-  go(0);
-  auto();
+  go(0);auto();
 }
 
 function setupReveal(c) {
@@ -810,28 +850,23 @@ function setupReveal(c) {
 }
 
 function startCountdown(iso) {
-  const ids = ["cdDays","cdHours","cdMinutes","cdSeconds"];
   const tick = () => {
     let diff = new Date(iso).getTime() - Date.now();
     diff = Number.isFinite(diff) ? Math.max(0, diff) : 0;
-    const vals = [
-      Math.floor(diff / 86400000),
-      Math.floor(diff % 86400000 / 3600000),
-      Math.floor(diff % 3600000 / 60000),
-      Math.floor(diff % 60000 / 1000)
-    ];
-    vals.forEach((v,i) => setText(ids[i], String(v).padStart(2,"0")));
+    const vals = [Math.floor(diff/86400000),Math.floor(diff%86400000/3600000),Math.floor(diff%3600000/60000),Math.floor(diff%60000/1000)];
+    document.querySelectorAll('[data-section="upcoming"]').forEach(sec => {
+      const prefixes=['cdDays','cdHours','cdMinutes','cdSeconds'];
+      prefixes.forEach((prefix,i)=>{const el=sec.querySelector(`[id^="${prefix}"]`);if(el)el.textContent=String(vals[i]).padStart(2,"0")});
+    });
   };
-  tick();
-  setInterval(tick, 1000);
+  tick(); setInterval(tick,1000);
 }
 
-function setupSocialCarousel() {
-  const track = document.getElementById("socialGrid");
-  const prev = document.getElementById("prevSocial");
-  const next = document.getElementById("nextSocial");
+function setupSocialCarousel(root = document) {
+  const track = root.querySelector ? root.querySelector(".social-grid") : null;
+  const prev = root.querySelector ? root.querySelector(".social-carousel-btn.prev") : null;
+  const next = root.querySelector ? root.querySelector(".social-carousel-btn.next") : null;
   if (!track || !prev || !next) return;
-
   const cardStep = () => {
     const card = track.querySelector(".social-card");
     if (!card) return Math.max(240, track.clientWidth * .78);
@@ -840,71 +875,26 @@ function setupSocialCarousel() {
     return card.getBoundingClientRect().width + gap;
   };
   const move = dir => track.scrollBy({ left: dir * cardStep(), behavior: "smooth" });
-  prev.onclick = () => move(-1);
-  next.onclick = () => move(1);
-
-  const update = () => {
-    const mobileCarousel = matchMedia("(max-width: 700px)").matches;
-    prev.classList.toggle("hidden", !mobileCarousel || track.children.length <= 1);
-    next.classList.toggle("hidden", !mobileCarousel || track.children.length <= 1);
-  };
-  update();
-  window.addEventListener("resize", update, { passive:true });
+  prev.onclick = () => move(-1); next.onclick = () => move(1);
+  const update = () => { const mobileCarousel=matchMedia("(max-width: 700px)").matches; prev.classList.toggle("hidden",!mobileCarousel||track.children.length<=1); next.classList.toggle("hidden",!mobileCarousel||track.children.length<=1); };
+  update(); window.addEventListener("resize", update, { passive:true });
 }
-
-function setupRailCarousel(trackId, prevId, nextId, cardSelector, mobileOnly = false) {
-  const track = document.getElementById(trackId);
-  const prev = document.getElementById(prevId);
-  const next = document.getElementById(nextId);
+function setupRailCarousel(root, trackSelector, prevSelector, nextSelector, cardSelector, mobileOnly = false) {
+  const track = root.querySelector(trackSelector), prev = root.querySelector(prevSelector), next = root.querySelector(nextSelector);
   if (!track || !prev || !next) return;
-
   const enabled = () => !mobileOnly || matchMedia("(max-width: 900px)").matches;
-  const step = () => {
-    const card = track.querySelector(cardSelector);
-    if (!card) return Math.max(260, track.clientWidth * .78);
-    const styles = getComputedStyle(track);
-    const gap = parseFloat(styles.gap || styles.columnGap || 16) || 16;
-    return card.getBoundingClientRect().width + gap;
-  };
-  const move = dir => {
-    if (!enabled()) return;
-    track.scrollBy({ left: dir * step(), behavior: "smooth" });
-  };
-  prev.onclick = () => move(-1);
-  next.onclick = () => move(1);
-
-  const update = () => {
-    const show = enabled() && track.children.length > 1;
-    prev.classList.toggle("hidden", !show);
-    next.classList.toggle("hidden", !show);
-  };
-  update();
-  window.addEventListener("resize", update, { passive:true });
+  const step = () => { const card=track.querySelector(cardSelector); if(!card)return Math.max(260,track.clientWidth*.78); const styles=getComputedStyle(track); const gap=parseFloat(styles.gap||styles.columnGap||16)||16; return card.getBoundingClientRect().width+gap; };
+  const move=dir=>{if(enabled())track.scrollBy({left:dir*step(),behavior:"smooth"})}; prev.onclick=()=>move(-1);next.onclick=()=>move(1);
+  const update=()=>{const show=enabled()&&track.children.length>1;prev.classList.toggle("hidden",!show);next.classList.toggle("hidden",!show)}; update();window.addEventListener("resize",update,{passive:true});
 }
-
-function setupCultureCarousel() {
-  setupRailCarousel("cultureGallery", "prevCulture", "nextCulture", ".culture-card", true);
-}
-
-function setupNoticesCarousel() {
-  setupRailCarousel("noticesTrack", "prevNotice", "nextNotice", ".notice-carousel-card", false);
-}
-
-function setupClipsCarousel() {
-  const track = document.getElementById("clipsGrid");
-  if (!track) return;
-  const step = () => {
-    const card = track.querySelector(".clip-card");
-    if (!card) return Math.max(260, track.clientWidth * .82);
-    return card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).gap || 18);
-  };
-  const move = dir => track.scrollBy({ left: dir * step(), behavior: "smooth" });
-  const prev = document.getElementById("prevClip"), next = document.getElementById("nextClip");
-  const hasClipCarousel = track.children.length > 1;
-  prev?.classList.toggle("hidden", !hasClipCarousel);
-  next?.classList.toggle("hidden", !hasClipCarousel);
-  if (prev) prev.onclick = () => move(-1);
-  if (next) next.onclick = () => move(1);
+function setupCultureCarousel(root = document) { setupRailCarousel(root, ".culture-gallery", ".culture-arrow.rail-arrow-left", ".culture-arrow.rail-arrow-right", ".culture-card", true); }
+function setupNoticesCarousel(root = document) { setupRailCarousel(root, ".notices-track", ".notice-arrow.rail-arrow-left", ".notice-arrow.rail-arrow-right", ".notice-carousel-card", false); }
+function setupClipsCarousel(root = document) {
+  const track = root.querySelector ? root.querySelector(".clips-grid") : null; if(!track)return;
+  const step=()=>{const card=track.querySelector(".clip-card");if(!card)return Math.max(260,track.clientWidth*.82);return card.getBoundingClientRect().width+parseFloat(getComputedStyle(track).gap||18)};
+  const move=dir=>track.scrollBy({left:dir*step(),behavior:"smooth"});
+  const prev=root.querySelector(".clips-side-arrow.rail-arrow-left"),next=root.querySelector(".clips-side-arrow.rail-arrow-right");
+  const has=track.children.length>1;prev?.classList.toggle("hidden",!has);next?.classList.toggle("hidden",!has);if(prev)prev.onclick=()=>move(-1);if(next)next.onclick=()=>move(1);
 }
 
 function setupAmbient(c) {
@@ -1061,7 +1051,6 @@ async function init() {
   });
 
   renderSocials(c);
-  setupSocialCarousel();
   renderCulture(c);
   renderFeatured(c);
   renderClips(c);
@@ -1090,10 +1079,11 @@ async function init() {
 
   applySections(c);
   setText("year", new Date().getFullYear());
-  setupCarousel(c);
-  setupClipsCarousel();
-  setupCultureCarousel();
-  setupNoticesCarousel();
+  document.querySelectorAll('[data-section="featured"]').forEach(sec => setupCarousel(c, sec));
+  document.querySelectorAll('[data-section="socials"]').forEach(sec => setupSocialCarousel(sec));
+  document.querySelectorAll('[data-section="clips"]').forEach(sec => setupClipsCarousel(sec));
+  document.querySelectorAll('[data-section="culture"]').forEach(sec => setupCultureCarousel(sec));
+  document.querySelectorAll('[data-section="announcements"]').forEach(sec => setupNoticesCarousel(sec));
   setupReveal(c);
   setupAmbient(c);
   startCountdown(c.nextStreamISO);

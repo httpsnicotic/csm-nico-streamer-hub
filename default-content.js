@@ -198,5 +198,16 @@ window.DEFAULT_CONFIG = {
   finalCta: { kicker:"NOS VEMOS EN EL PRÓXIMO", title:"NOS VEMOS EN DIRECTO." },
   customSections: [],
   sections: { live:true, socials:true, culture:true, featured:true, clips:true, upcoming:true, announcements:true, about:true, custom:true },
+  sectionItems: [
+    { id:"live", type:"live", name:"Kick / En vivo", enabled:true },
+    { id:"socials", type:"socials", name:"Redes", enabled:true },
+    { id:"culture", type:"culture", name:"Instagram / Cultura", enabled:true },
+    { id:"featured", type:"featured", name:"Carrusel", enabled:true },
+    { id:"clips", type:"clips", name:"Clips", enabled:true },
+    { id:"upcoming", type:"upcoming", name:"Próximo stream", enabled:true },
+    { id:"announcements", type:"announcements", name:"Anuncio", enabled:true },
+    { id:"about", type:"about", name:"Sobre mí", enabled:true },
+    { id:"custom", type:"custom", name:"Extra", enabled:true }
+  ],
   sectionOrder: ["live","socials","culture","featured","clips","upcoming","announcements","about","custom"]
 };
